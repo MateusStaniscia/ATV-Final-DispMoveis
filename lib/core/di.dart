@@ -1,7 +1,6 @@
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/repositories/student_repository_impl.dart';
 import '../../data/repositories/theme_repository_impl.dart';
-import '../../data/services/shared_preferences_service_impl.dart';
+import '../../data/services/sqlite_service.dart';
 import '../../domain/facades/student_facade.dart';
 import '../../domain/facades/theme_facade.dart';
 import '../../domain/usecases/calculate_ranking_usecase.dart';
@@ -24,13 +23,13 @@ late final StudentDetailViewModel studentDetailViewModel;
 /// Inicializa todas as dependências do projeto seguindo estritamente a hierarquia:
 /// Services -> Repositories -> Use Cases -> Facade de Use Cases -> ViewModel
 Future<void> initDependencies() async {
-  // 1. Instanciação do Service (Acesso ao SharedPreferences)
-  final prefs = await SharedPreferences.getInstance();
-  final prefService = SharedPreferencesServiceImpl(prefs);
+  // 1. Instanciação do Service (Acesso ao SQLite)
+  final dbHelper = DatabaseHelper.instance;
+  await dbHelper.database;
 
   // 2. Instanciação dos Repositories
-  final studentRepo = StudentRepositoryImpl(prefService);
-  final themeRepo = ThemeRepositoryImpl(prefService);
+  final studentRepo = StudentRepositoryImpl(dbHelper);
+  final themeRepo = ThemeRepositoryImpl(dbHelper);
 
   // 3. Instanciação dos Use Cases (Regras de Negócio Isoladas)
   final getStudents = GetStudentsUseCase(studentRepo);

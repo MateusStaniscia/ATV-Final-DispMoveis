@@ -65,7 +65,7 @@ class AboutScreen extends StatelessWidget {
                 'de convivência, destaque e participação na turma.\n\n'
                 'Cada aluno recebe notas de 1 a 5 estrelas em 15 categorias. A soma dessas notas forma o '
                 'Nível Lenda, usado para organizar o ranking geral.\n\n'
-                'Todos os dados são armazenados localmente no dispositivo utilizando SharedPreferences. '
+                'Todos os dados são armazenados localmente no dispositivo utilizando banco de dados SQLite. '
                 'O aplicativo também permite alternar entre tema claro e tema escuro.',
                 style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
               ),
@@ -145,7 +145,7 @@ class AboutScreen extends StatelessWidget {
                   _buildBulletPoint(
                     context,
                     'Persistência:',
-                    'Todos os dados dos alunos cadastrados são salvos localmente em formato JSON string no SharedPreferences. Eles permanecem salvos mesmo após fechar o aplicativo.',
+                    'Todos os dados dos alunos cadastrados são salvos localmente no banco de dados SQLite. Eles permanecem salvos mesmo após fechar o aplicativo.',
                   ),
                   const SizedBox(height: 8),
                   _buildBulletPoint(
