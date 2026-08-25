@@ -1,7 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import 'package:path/path.dart';
 
 class DatabaseHelper {
@@ -17,17 +15,13 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDB(String filePath) async {
+    String path;
     if (kIsWeb) {
-      databaseFactory = databaseFactoryFfiWeb;
-    } else if (defaultTargetPlatform == TargetPlatform.windows ||
-        defaultTargetPlatform == TargetPlatform.linux ||
-        defaultTargetPlatform == TargetPlatform.macOS) {
-      sqfliteFfiInit();
-      databaseFactory = databaseFactoryFfi;
+      path = filePath;
+    } else {
+      final dbPath = await getDatabasesPath();
+      path = join(dbPath, filePath);
     }
-
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, filePath);
 
     return await openDatabase(
       path,
@@ -38,7 +32,7 @@ class DatabaseHelper {
 
   Future<void> _createDB(Database db, int version) async {
     await db.execute('''
-      CREATE TABLE students (
+      CREATE TABLE IF NOT EXISTS students (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         course TEXT NOT NULL,
@@ -50,7 +44,7 @@ class DatabaseHelper {
     ''');
 
     await db.execute('''
-      CREATE TABLE preferences (
+      CREATE TABLE IF NOT EXISTS preferences (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
       )
