@@ -1,3 +1,4 @@
+import '../entities/popularity_criteria.dart';
 import '../../core/result/result.dart';
 import '../entities/student.dart';
 import '../repositories/student_repository.dart';
@@ -8,6 +9,30 @@ class SaveStudentUseCase {
   const SaveStudentUseCase(this._repository);
 
   Future<Result<void>> call(Student student) async {
+    if (student.id.isEmpty ||
+        student.id.contains('/') ||
+        student.name.trim().length > 120 ||
+        student.nickname.length > 60) {
+      return Failure(
+        ArgumentError('Campos inválidos.'),
+        'Use nome de até 120 e apelido de até 60 caracteres.',
+      );
+    }
+    if (student.birthDate.isAfter(DateTime.now()) ||
+        student.birthDate.year < 1900) {
+      return Failure(
+        ArgumentError('Data inválida.'),
+        'Informe uma data de nascimento entre 1900 e hoje.',
+      );
+    }
+    final keys = PopularityCriteria.values.map((c) => c.id).toSet();
+    if (student.scores.length != keys.length ||
+        !student.scores.keys.every(keys.contains)) {
+      return Failure(
+        ArgumentError('Critérios incompletos.'),
+        'Preencha todos os 15 critérios.',
+      );
+    }
     // Validações de Regra de Negócio
     if (student.name.trim().isEmpty) {
       return Failure(
@@ -15,7 +40,7 @@ class SaveStudentUseCase {
         'O nome do aluno é obrigatório.',
       );
     }
-    
+
     const validCourses = ['INFO', 'MEC', 'MAMB', 'PROD', 'TADS', 'TGA'];
     if (!validCourses.contains(student.course)) {
       return Failure(
@@ -40,6 +65,11 @@ class SaveStudentUseCase {
       }
     }
 
-    return _repository.saveStudent(student);
+    return _repository.saveStudent(
+      student.copyWith(
+        name: student.name.trim(),
+        nickname: student.nickname.trim(),
+      ),
+    );
   }
 }

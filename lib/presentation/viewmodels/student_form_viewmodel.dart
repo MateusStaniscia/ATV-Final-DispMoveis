@@ -13,7 +13,9 @@ class StudentFormViewModel {
   final course = signal<String>('INFO');
   final year = signal<int>(2026);
   final nickname = signal<String>('');
-  final birthDate = signal<DateTime>(DateTime.now().subtract(const Duration(days: 365 * 18))); // ~18 anos padrão
+  final birthDate = signal<DateTime>(
+    DateTime.now().subtract(const Duration(days: 365 * 18)),
+  ); // ~18 anos padrão
   final scores = signal<Map<String, int>>({});
 
   // Sinais de Controle de UI
@@ -21,6 +23,7 @@ class StudentFormViewModel {
   final studentId = signal<String>('');
   final errorMessage = signal<String>('');
   final success = signal<bool>(false);
+  final editLoaded = signal<bool>(true);
 
   // Nível Lenda Computado Dinamicamente
   late final Computed<int> legendLevel;
@@ -46,8 +49,17 @@ class StudentFormViewModel {
       errorMessage.value = '';
       success.value = false;
 
-      final id = isEditMode.value ? studentId.value : DateTime.now().microsecondsSinceEpoch.toString();
-      
+      if (!editLoaded.value) {
+        return Failure(
+          StateError('Aluno indisponível.'),
+          'Carregue o aluno antes de salvar.',
+        );
+      }
+
+      final id = isEditMode.value
+          ? studentId.value
+          : DateTime.now().microsecondsSinceEpoch.toString();
+
       final student = Student(
         id: id,
         name: name.value,
@@ -73,6 +85,7 @@ class StudentFormViewModel {
 
     loadStudentForEditCommand = CommandWithParam<void, String>((id) async {
       errorMessage.value = '';
+      editLoaded.value = false;
       isEditMode.value = true;
       studentId.value = id;
 
@@ -80,6 +93,7 @@ class StudentFormViewModel {
       return result.when(
         onSuccess: (student) {
           if (student != null) {
+            editLoaded.value = true;
             name.value = student.name;
             course.value = student.course;
             year.value = student.year;
@@ -109,6 +123,7 @@ class StudentFormViewModel {
 
   /// Limpa/reseta o formulário
   void reset() {
+    editLoaded.value = true;
     name.value = '';
     course.value = 'INFO';
     year.value = 2026;
@@ -124,7 +139,8 @@ class StudentFormViewModel {
   void _resetScores() {
     final defaultScores = <String, int>{};
     for (final criteria in PopularityCriteria.values) {
-      defaultScores[criteria.id] = 3; // Inicializa com nota média neutra (3 estrelas)
+      defaultScores[criteria.id] =
+          3; // Inicializa com nota média neutra (3 estrelas)
     }
     scores.value = defaultScores;
   }

@@ -22,7 +22,6 @@ class AppTheme {
       colorScheme: const ColorScheme.light(
         primary: _lightPrimary,
         secondary: _lightSecondary,
-        background: _lightBackground,
         surface: _lightSurface,
         onPrimary: Colors.white,
         onSecondary: Colors.black,
@@ -42,7 +41,7 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: _lightSurface,
         elevation: 2,
-        shadowColor: Colors.black.withOpacity(0.05),
+        shadowColor: Colors.black.withValues(alpha: 0.05),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: Colors.grey.shade200, width: 1),
@@ -57,10 +56,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -80,10 +76,7 @@ class AppTheme {
         ),
         labelStyle: TextStyle(color: Colors.grey.shade600),
       ),
-      dividerTheme: DividerThemeData(
-        color: Colors.grey.shade200,
-        thickness: 1,
-      ),
+      dividerTheme: DividerThemeData(color: Colors.grey.shade200, thickness: 1),
     );
   }
 
@@ -96,7 +89,6 @@ class AppTheme {
       colorScheme: const ColorScheme.dark(
         primary: _darkPrimary,
         secondary: _darkSecondary,
-        background: _darkBackground,
         surface: _darkSurface,
         onPrimary: Colors.black,
         onSecondary: Colors.black,
@@ -116,7 +108,7 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: _darkSurface,
         elevation: 4,
-        shadowColor: Colors.black.withOpacity(0.2),
+        shadowColor: Colors.black.withValues(alpha: 0.2),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: Color(0xFF334155), width: 1),
@@ -131,10 +123,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(

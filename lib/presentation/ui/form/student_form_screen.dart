@@ -4,19 +4,18 @@ import 'package:signals_flutter/signals_flutter.dart';
 import '../../../core/di.dart';
 import '../../../domain/entities/popularity_criteria.dart';
 
-class StudentFormScreen extends StatefulWidget {
+class StudentFormScreen extends SignalStatefulWidget {
   final String? studentId;
 
-  const StudentFormScreen({
-    super.key,
-    this.studentId,
-  });
+  const StudentFormScreen({super.key, this.studentId});
 
   @override
   State<StudentFormScreen> createState() => _StudentFormScreenState();
 }
 
 class _StudentFormScreenState extends State<StudentFormScreen> {
+  final _viewModel = studentFormViewModel;
+  final _listViewModel = studentListViewModel;
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _nicknameController = TextEditingController();
@@ -25,19 +24,20 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       if (widget.studentId != null) {
-        studentFormViewModel.loadStudentForEditCommand.execute(widget.studentId!);
+        _viewModel.loadStudentForEditCommand.execute(widget.studentId!);
       } else {
-        studentFormViewModel.reset();
+        _viewModel.reset();
       }
     });
 
     // Sincroniza controles de texto com os sinais da ViewModel
     _nameController.addListener(() {
-      studentFormViewModel.name.value = _nameController.text;
+      _viewModel.name.value = _nameController.text;
     });
     _nicknameController.addListener(() {
-      studentFormViewModel.nickname.value = _nicknameController.text;
+      _viewModel.nickname.value = _nicknameController.text;
     });
   }
 
@@ -48,7 +48,10 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
     super.dispose();
   }
 
-  Future<void> _selectBirthDate(BuildContext context, DateTime currentDate) async {
+  Future<void> _selectBirthDate(
+    BuildContext context,
+    DateTime currentDate,
+  ) async {
     final theme = Theme.of(context);
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -67,7 +70,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
       },
     );
     if (picked != null && picked != currentDate) {
-      studentFormViewModel.birthDate.value = picked;
+      _viewModel.birthDate.value = picked;
     }
   }
 
@@ -77,21 +80,22 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     // Assina os sinais reativos da ViewModel
-    final isEdit = studentFormViewModel.isEditMode.watch(context);
-    final isSaving = studentFormViewModel.saveStudentCommand.isExecutingSignal.watch(context);
-    final isLoadingData = studentFormViewModel.loadStudentForEditCommand.isExecutingSignal.watch(context);
-    
-    final currentCourse = studentFormViewModel.course.watch(context);
-    final currentYear = studentFormViewModel.year.watch(context);
-    final currentBirthDate = studentFormViewModel.birthDate.watch(context);
-    final currentScores = studentFormViewModel.scores.watch(context);
-    final legendLevelVal = studentFormViewModel.legendLevel.watch(context);
-    final error = studentFormViewModel.errorMessage.watch(context);
-    final successVal = studentFormViewModel.success.watch(context);
+    final isEdit = _viewModel.isEditMode.value;
+    final isSaving = _viewModel.saveStudentCommand.isExecutingSignal.value;
+    final isLoadingData =
+        _viewModel.loadStudentForEditCommand.isExecutingSignal.value;
+
+    final currentCourse = _viewModel.course.value;
+    final currentYear = _viewModel.year.value;
+    final currentBirthDate = _viewModel.birthDate.value;
+    final currentScores = _viewModel.scores.value;
+    final legendLevelVal = _viewModel.legendLevel.value;
+    final error = _viewModel.errorMessage.value;
+    final successVal = _viewModel.success.value;
 
     // Efeito para sincronizar texto ao carregar dados do modo edição
-    final vmName = studentFormViewModel.name.value;
-    final vmNickname = studentFormViewModel.nickname.value;
+    final vmName = _viewModel.name.value;
+    final vmNickname = _viewModel.nickname.value;
     if (isEdit && _nameController.text != vmName) {
       _nameController.text = vmName;
     }
@@ -102,11 +106,18 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
     // Escuta o sucesso para navegar de volta
     if (successVal) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        studentFormViewModel.success.value = false;
-        studentFormViewModel.reset();
-        studentListViewModel.loadStudentsCommand.execute();
+        if (!mounted) return;
+        _viewModel.success.value = false;
+        _viewModel.reset();
+        _listViewModel.loadStudentsCommand.execute();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(isEdit ? 'Aluno atualizado com sucesso!' : 'Aluno cadastrado com sucesso!')),
+          SnackBar(
+            content: Text(
+              isEdit
+                  ? 'Aluno atualizado com sucesso!'
+                  : 'Aluno cadastrado com sucesso!',
+            ),
+          ),
         );
         if (context.canPop()) {
           context.pop();
@@ -119,22 +130,22 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
     // Escuta erros para mostrar mensagem
     if (error.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(error), backgroundColor: Colors.red),
         );
-        studentFormViewModel.errorMessage.value = '';
+        _viewModel.errorMessage.value = '';
       });
     }
 
     final coursesList = ['INFO', 'MEC', 'MAMB', 'PROD', 'TADS', 'TGA'];
     final yearsList = List<int>.generate(2026 - 1998 + 1, (i) => 1998 + i);
 
-    final formattedBirthDate = '${currentBirthDate.day.toString().padLeft(2, '0')}/${currentBirthDate.month.toString().padLeft(2, '0')}/${currentBirthDate.year}';
+    final formattedBirthDate =
+        '${currentBirthDate.day.toString().padLeft(2, '0')}/${currentBirthDate.month.toString().padLeft(2, '0')}/${currentBirthDate.year}';
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(isEdit ? 'Editar Aluno' : 'Cadastrar Aluno'),
-      ),
+      appBar: AppBar(title: Text(isEdit ? 'Editar Aluno' : 'Cadastrar Aluno')),
       body: isLoadingData
           ? const Center(child: CircularProgressIndicator.adaptive())
           : Form(
@@ -147,7 +158,9 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                     // Seção de Cadastro
                     Text(
                       'Dados Cadastrais',
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Card(
@@ -193,7 +206,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                                     }).toList(),
                                     onChanged: (val) {
                                       if (val != null) {
-                                        studentFormViewModel.course.value = val;
+                                        _viewModel.course.value = val;
                                       }
                                     },
                                   ),
@@ -213,7 +226,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                                     }).toList(),
                                     onChanged: (val) {
                                       if (val != null) {
-                                        studentFormViewModel.year.value = val;
+                                        _viewModel.year.value = val;
                                       }
                                     },
                                   ),
@@ -222,12 +235,15 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                             ),
                             const SizedBox(height: 16),
                             InkWell(
-                              onTap: () => _selectBirthDate(context, currentBirthDate),
+                              onTap: () =>
+                                  _selectBirthDate(context, currentBirthDate),
                               borderRadius: BorderRadius.circular(12),
                               child: InputDecorator(
                                 decoration: const InputDecoration(
                                   labelText: 'Data de Nascimento',
-                                  prefixIcon: Icon(Icons.calendar_today_outlined),
+                                  prefixIcon: Icon(
+                                    Icons.calendar_today_outlined,
+                                  ),
                                 ),
                                 child: Text(
                                   formattedBirthDate,
@@ -244,14 +260,18 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                     // Seção de Critérios
                     Text(
                       'Critérios de Avaliação',
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     ...PopularityCriteria.values.map((criteria) {
                       final score = currentScores[criteria.id] ?? 3;
                       return _buildCriteriaFormRow(criteria, score);
                     }),
-                    const SizedBox(height: 100), // Espaço inferior para o botão fixo
+                    const SizedBox(
+                      height: 100,
+                    ), // Espaço inferior para o botão fixo
                   ],
                 ),
               ),
@@ -294,12 +314,16 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
               child: isSaving
                   ? const Center(child: CircularProgressIndicator.adaptive())
                   : ElevatedButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          studentFormViewModel.saveStudentCommand.execute();
-                        }
-                      },
-                      child: Text(isEdit ? 'Salvar Alterações' : 'Cadastrar Aluno'),
+                      onPressed: isLoadingData || !_viewModel.editLoaded.value
+                          ? null
+                          : () {
+                              if (_formKey.currentState!.validate()) {
+                                _viewModel.saveStudentCommand.execute();
+                              }
+                            },
+                      child: Text(
+                        isEdit ? 'Salvar Alterações' : 'Cadastrar Aluno',
+                      ),
                     ),
             ),
           ],
@@ -323,7 +347,10 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                 Expanded(
                   child: Text(
                     criteria.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
                 // Estrelas Interativas
@@ -334,13 +361,17 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                     final isSelected = starValue <= score;
                     return GestureDetector(
                       onTap: () {
-                        studentFormViewModel.updateScore(criteria.id, starValue);
+                        _viewModel.updateScore(criteria.id, starValue);
                       },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: Icon(
-                          isSelected ? Icons.star_rounded : Icons.star_border_rounded,
-                          color: isSelected ? Colors.amber : Colors.grey.shade400,
+                          isSelected
+                              ? Icons.star_rounded
+                              : Icons.star_border_rounded,
+                          color: isSelected
+                              ? Colors.amber
+                              : Colors.grey.shade400,
                           size: 28,
                         ),
                       ),
@@ -354,7 +385,9 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
               criteria.description,
               style: TextStyle(
                 fontSize: 12,
-                color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                color: theme.textTheme.bodyMedium?.color?.withValues(
+                  alpha: 0.7,
+                ),
               ),
             ),
           ],

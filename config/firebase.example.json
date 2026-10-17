@@ -1,0 +1,6 @@
+{
+  "FIREBASE_PROJECT_ID": "seu-projeto",
+  "FIREBASE_API_KEY": "sua-chave-web-ou-android",
+  "FIREBASE_APP_ID": "id-do-app-na-plataforma",
+  "FIREBASE_MESSAGING_SENDER_ID": "numero-do-projeto"
+}

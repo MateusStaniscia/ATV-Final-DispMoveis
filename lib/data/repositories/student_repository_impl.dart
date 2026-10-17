@@ -1,81 +1,88 @@
-import 'package:sqflite/sqflite.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/result/result.dart';
 import '../../domain/entities/student.dart';
 import '../../domain/repositories/student_repository.dart';
 import '../models/student_model.dart';
-import '../services/sqlite_service.dart';
 
+/// Cada instância pertence a uma única sessão.
 class StudentRepositoryImpl implements StudentRepository {
-  final DatabaseHelper _dbHelper;
+  final FirebaseFirestore firestore;
+  final FirebaseAuth auth;
+  final String? uid;
+  StudentRepositoryImpl(this.firestore, this.auth, this.uid);
 
-  const StudentRepositoryImpl(this._dbHelper);
+  CollectionReference<Map<String, dynamic>> get _students {
+    _checkSession();
+    return firestore.collection('users').doc(uid).collection('students');
+  }
 
-  @override
-  Future<Result<List<Student>>> getStudents() async {
-    try {
-      final db = await _dbHelper.database;
-      final List<Map<String, dynamic>> maps = await db.query('students');
-      
-      final List<Student> students = maps.map((map) => StudentModel.fromMap(map)).toList();
-      return Success(students);
-    } catch (e) {
-      return Failure(e, 'Falha ao recuperar a lista de alunos.');
+  void _checkSession() {
+    if (uid == null || auth.currentUser?.uid != uid) {
+      throw StateError('Sua sessão terminou. Entre novamente.');
     }
   }
 
-  @override
-  Future<Result<Student?>> getStudentById(String id) async {
+  Future<Result<T>> _guard<T>(Future<T> Function() action) async {
     try {
-      final db = await _dbHelper.database;
-      final List<Map<String, dynamic>> maps = await db.query(
-        'students',
-        where: 'id = ?',
-        whereArgs: [id],
-      );
-
-      if (maps.isNotEmpty) {
-        return Success(StudentModel.fromMap(maps.first));
+      _checkSession();
+      final value = await action();
+      _checkSession();
+      return Success(value);
+    } catch (e) {
+      if (e is StateError) {
+        return Failure(e, 'Sua sessão terminou. Entre novamente.');
       }
-      return const Success(null);
-    } catch (e) {
-      return Failure(e, 'Falha ao buscar aluno pelo identificador.');
-    }
-  }
-
-  @override
-  Future<Result<void>> saveStudent(Student student) async {
-    try {
-      final db = await _dbHelper.database;
-      final model = StudentModel.fromEntity(student);
-      
-      await db.insert(
-        'students',
-        model.toMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-      return const Success(null);
-    } catch (e) {
-      return Failure(e, 'Falha ao salvar aluno.');
-    }
-  }
-
-  @override
-  Future<Result<void>> deleteStudent(String id) async {
-    try {
-      final db = await _dbHelper.database;
-      final count = await db.delete(
-        'students',
-        where: 'id = ?',
-        whereArgs: [id],
-      );
-
-      if (count > 0) {
-        return const Success(null);
-      } else {
-        return Failure(ArgumentError('Aluno não encontrado para exclusão.'));
+      if (e is FirebaseException && e.code == 'permission-denied') {
+        return Failure(
+          e,
+          'Acesso negado. Confira a sessão e as regras do Firestore.',
+        );
       }
-    } catch (e) {
-      return Failure(e, 'Falha ao excluir aluno.');
+      return Failure(
+        e,
+        'Não foi possível acessar o Firebase. Verifique sua conexão e tente novamente.',
+      );
     }
   }
+
+  @override
+  Future<Result<List<Student>>> getStudents() => _guard(() async {
+    final snapshot = await _students.get(
+      const GetOptions(source: Source.server),
+    );
+    final students = snapshot.docs
+        .map((doc) => StudentModel.fromJson({...doc.data(), 'id': doc.id}))
+        .toList();
+    students.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
+    return students;
+  });
+  @override
+  Future<Result<Student?>> getStudentById(String id) => _guard(() async {
+    final doc = await _students
+        .doc(id)
+        .get(const GetOptions(source: Source.server));
+    return doc.exists
+        ? StudentModel.fromJson({...doc.data()!, 'id': doc.id})
+        : null;
+  });
+  @override
+  Future<Result<void>> saveStudent(Student student) => _guard(() async {
+    // Transações exigem rede; não anunciam gravações offline como concluídas.
+    final ref = _students.doc(student.id);
+    await firestore.runTransaction((transaction) async {
+      _checkSession();
+      transaction.set(ref, StudentModel.fromEntity(student).toJson());
+    });
+  });
+  @override
+  Future<Result<void>> deleteStudent(String id) => _guard(() async {
+    final ref = _students.doc(id);
+    await firestore.runTransaction((transaction) async {
+      _checkSession();
+      transaction.delete(ref);
+    });
+  });
 }

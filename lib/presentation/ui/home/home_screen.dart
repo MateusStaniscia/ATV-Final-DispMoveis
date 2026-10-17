@@ -4,15 +4,17 @@ import 'package:signals_flutter/signals_flutter.dart';
 import '../../../core/di.dart';
 import '../../../domain/entities/student.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends SignalStatefulWidget {
   const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   late final TabController _tabController;
+  final _viewModel = studentListViewModel;
 
   @override
   void initState() {
@@ -20,7 +22,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     _tabController = TabController(length: 2, vsync: this);
     // Dispara o carregamento dos alunos assim que a tela inicializa
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      studentListViewModel.loadStudentsCommand.execute();
+      if (mounted) _viewModel.loadStudentsCommand.execute();
     });
   }
 
@@ -33,14 +35,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     // Assina os sinais reativos para reconstruir o widget quando o estado mudar
-    final isDark = themeViewModel.isDarkMode.watch(context);
-    final listLoading = studentListViewModel.loadStudentsCommand.isExecutingSignal.watch(context);
-    final deleteLoading = studentListViewModel.deleteStudentCommand.isExecutingSignal.watch(context);
-    final studentsList = studentListViewModel.students.watch(context);
-    final rankedList = studentListViewModel.rankedStudents.watch(context);
-    final error = studentListViewModel.errorMessage.watch(context);
+    final isDark = themeViewModel.isDarkMode.value;
+    final listLoading = _viewModel.loadStudentsCommand.isExecutingSignal.value;
+    final deleteLoading =
+        _viewModel.deleteStudentCommand.isExecutingSignal.value;
+    final studentsList = _viewModel.students.value;
+    final rankedList = _viewModel.rankedStudents.value;
+    final error = _viewModel.errorMessage.value;
 
     final isLoading = listLoading || deleteLoading;
 
@@ -48,6 +51,26 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       appBar: AppBar(
         title: const Text('PirâmidGame'),
         actions: [
+          IconButton(
+            tooltip: 'Atualizar dados',
+            icon: const Icon(Icons.refresh),
+            onPressed: isLoading
+                ? null
+                : () => _viewModel.loadStudentsCommand.execute(),
+          ),
+          IconButton(
+            tooltip: 'Sair da conta',
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await authViewModel.signOut();
+              if (!context.mounted) return;
+              if (authViewModel.error != null) {
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(authViewModel.error!)));
+              }
+            },
+          ),
           IconButton(
             icon: Icon(
               isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
@@ -68,14 +91,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           labelColor: theme.colorScheme.primary,
           unselectedLabelColor: Colors.grey,
           tabs: const [
-            Tab(
-              icon: Icon(Icons.people_alt_outlined),
-              text: 'Alunos',
-            ),
-            Tab(
-              icon: Icon(Icons.emoji_events_outlined),
-              text: 'Ranking Geral',
-            ),
+            Tab(icon: Icon(Icons.people_alt_outlined), text: 'Alunos'),
+            Tab(icon: Icon(Icons.emoji_events_outlined), text: 'Ranking Geral'),
           ],
         ),
       ),
@@ -101,7 +118,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildStudentsTab(BuildContext context, List<Student> students, String error) {
+  Widget _buildStudentsTab(
+    BuildContext context,
+    List<Student> students,
+    String error,
+  ) {
     if (error.isNotEmpty) {
       return Center(
         child: Padding(
@@ -157,14 +178,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             Expanded(
               child: Text(
                 student.name,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
             ),
             if (student.nickname.isNotEmpty)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.secondary.withOpacity(0.15),
+                  color: theme.colorScheme.secondary.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -184,13 +208,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             const SizedBox(height: 6),
             Text(
               'Curso: ${student.course} | Ano: ${student.year}',
-              style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7)),
+              style: TextStyle(
+                color: theme.textTheme.bodyMedium?.color?.withValues(
+                  alpha: 0.7,
+                ),
+              ),
             ),
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.08),
+                color: theme.colorScheme.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
@@ -211,7 +239,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               icon: const Icon(Icons.edit_outlined, color: Colors.blue),
               onPressed: () {
                 studentFormViewModel.reset();
-                studentFormViewModel.loadStudentForEditCommand.execute(student.id);
+                studentFormViewModel.loadStudentForEditCommand.execute(
+                  student.id,
+                );
                 context.push('/form?id=${student.id}');
               },
             ),
@@ -228,9 +258,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildRankingTab(BuildContext context, List<Student> students, String error) {
+  Widget _buildRankingTab(
+    BuildContext context,
+    List<Student> students,
+    String error,
+  ) {
     if (error.isNotEmpty) {
-      return Center(child: Text(error, style: const TextStyle(color: Colors.red)));
+      return Center(
+        child: Text(error, style: const TextStyle(color: Colors.red)),
+      );
     }
 
     if (students.isEmpty) {
@@ -253,10 +289,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildRankingCard(BuildContext context, Student student, int position) {
+  Widget _buildRankingCard(
+    BuildContext context,
+    Student student,
+    int position,
+  ) {
     final theme = Theme.of(context);
     final isTop3 = position <= 3;
-    
+
     // Cores temáticas para o pódio
     Color medalColor;
     Color? bgPodiumColor;
@@ -264,15 +304,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
     if (position == 1) {
       medalColor = const Color(0xFFFFD700); // Ouro
-      bgPodiumColor = const Color(0xFFFFD700).withOpacity(0.08);
+      bgPodiumColor = const Color(0xFFFFD700).withValues(alpha: 0.08);
       trophyIcon = Icons.workspace_premium_rounded;
     } else if (position == 2) {
       medalColor = const Color(0xFFC0C0C0); // Prata
-      bgPodiumColor = const Color(0xFFC0C0C0).withOpacity(0.08);
+      bgPodiumColor = const Color(0xFFC0C0C0).withValues(alpha: 0.08);
       trophyIcon = Icons.military_tech_rounded;
     } else if (position == 3) {
       medalColor = const Color(0xFFCD7F32); // Bronze
-      bgPodiumColor = const Color(0xFFCD7F32).withOpacity(0.08);
+      bgPodiumColor = const Color(0xFFCD7F32).withValues(alpha: 0.08);
       trophyIcon = Icons.military_tech_rounded;
     } else {
       medalColor = Colors.grey.shade400;
@@ -288,7 +328,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: medalColor.withOpacity(0.15),
+            color: medalColor.withValues(alpha: 0.15),
             shape: BoxShape.circle,
             border: isTop3 ? Border.all(color: medalColor, width: 2) : null,
           ),
@@ -319,7 +359,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             if (student.nickname.isNotEmpty)
               Text(
                 '(${student.nickname})',
-                style: const TextStyle(fontSize: 13, fontStyle: FontStyle.italic, color: Colors.grey),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.grey,
+                ),
               ),
           ],
         ),
@@ -336,15 +380,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: isTop3 ? theme.colorScheme.primary : theme.textTheme.bodyLarge?.color,
+                color: isTop3
+                    ? theme.colorScheme.primary
+                    : theme.textTheme.bodyLarge?.color,
               ),
             ),
             Text(
               position == 1
                   ? 'Lenda do IFPR'
                   : isTop3
-                      ? 'Nível Elite'
-                      : 'Popular',
+                  ? 'Nível Elite'
+                  : 'Popular',
               style: TextStyle(
                 fontSize: 10,
                 color: isTop3 ? theme.colorScheme.secondary : Colors.grey,
@@ -366,7 +412,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('Confirmar Exclusão'),
-          content: Text('Deseja realmente remover o registro de "${student.name}" do aplicativo? Esta ação é definitiva.'),
+          content: Text(
+            'Deseja realmente remover o registro de "${student.name}" do aplicativo? Esta ação é definitiva.',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
@@ -376,19 +424,28 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               onPressed: () async {
                 Navigator.of(dialogContext).pop();
-                final result = await studentListViewModel.deleteStudentCommand.execute(student.id);
+                final result = await _viewModel.deleteStudentCommand.execute(
+                  student.id,
+                );
                 result.when(
                   onSuccess: (_) {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('${student.name} removido com sucesso.')),
+                        SnackBar(
+                          content: Text(
+                            '${student.name} removido com sucesso.',
+                          ),
+                        ),
                       );
                     }
                   },
                   onFailure: (err, msg) {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Erro ao remover aluno: $msg'), backgroundColor: Colors.red),
+                        SnackBar(
+                          content: Text('Erro ao remover aluno: $msg'),
+                          backgroundColor: Colors.red,
+                        ),
                       );
                     }
                   },

@@ -1,4 +1,3 @@
-import 'dart:convert';
 import '../../domain/entities/student.dart';
 
 class StudentModel extends Student {
@@ -19,7 +18,7 @@ class StudentModel extends Student {
         parsedScores[key] = (value as num).toInt();
       });
     }
-    
+
     return StudentModel(
       id: json['id'] as String,
       name: json['name'] as String,
@@ -53,37 +52,5 @@ class StudentModel extends Student {
       birthDate: student.birthDate,
       scores: student.scores,
     );
-  }
-
-  factory StudentModel.fromMap(Map<String, dynamic> map) {
-    Map<String, int> parsedScores = {};
-    if (map['scores'] != null && map['scores'].toString().isNotEmpty) {
-      final decoded = jsonDecode(map['scores'] as String) as Map<String, dynamic>;
-      decoded.forEach((key, value) {
-        parsedScores[key] = (value as num).toInt();
-      });
-    }
-
-    return StudentModel(
-      id: map['id'] as String,
-      name: map['name'] as String,
-      course: map['course'] as String,
-      year: (map['year'] as num).toInt(),
-      nickname: map['nickname'] as String,
-      birthDate: DateTime.parse(map['birthDate'] as String),
-      scores: parsedScores,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'name': name,
-      'course': course,
-      'year': year,
-      'nickname': nickname,
-      'birthDate': birthDate.toIso8601String(),
-      'scores': jsonEncode(scores),
-    };
   }
 }

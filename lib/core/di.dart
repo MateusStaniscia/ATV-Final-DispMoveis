@@ -1,66 +1,60 @@
-import '../../data/repositories/student_repository_impl.dart';
-import '../../data/repositories/theme_repository_impl.dart';
-import '../../data/services/sqlite_service.dart';
-import '../../domain/facades/student_facade.dart';
-import '../../domain/facades/theme_facade.dart';
-import '../../domain/usecases/calculate_ranking_usecase.dart';
-import '../../domain/usecases/delete_student_usecase.dart';
-import '../../domain/usecases/get_student_by_id_usecase.dart';
-import '../../domain/usecases/get_students_usecase.dart';
-import '../../domain/usecases/get_theme_usecase.dart';
-import '../../domain/usecases/save_student_usecase.dart';
-import '../../domain/usecases/save_theme_usecase.dart';
-import '../../presentation/viewmodels/student_detail_viewmodel.dart';
-import '../../presentation/viewmodels/student_form_viewmodel.dart';
-import '../../presentation/viewmodels/student_list_viewmodel.dart';
-import '../../presentation/viewmodels/theme_viewmodel.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../data/repositories/student_repository_impl.dart';
+import '../data/repositories/theme_repository_impl.dart';
+import '../data/services/auth_service.dart';
+import '../domain/facades/student_facade.dart';
+import '../domain/facades/theme_facade.dart';
+import '../domain/usecases/calculate_ranking_usecase.dart';
+import '../domain/usecases/delete_student_usecase.dart';
+import '../domain/usecases/get_student_by_id_usecase.dart';
+import '../domain/usecases/get_students_usecase.dart';
+import '../domain/usecases/get_theme_usecase.dart';
+import '../domain/usecases/save_student_usecase.dart';
+import '../domain/usecases/save_theme_usecase.dart';
+import '../presentation/viewmodels/auth_viewmodel.dart';
+import '../presentation/viewmodels/student_detail_viewmodel.dart';
+import '../presentation/viewmodels/student_form_viewmodel.dart';
+import '../presentation/viewmodels/student_list_viewmodel.dart';
+import '../presentation/viewmodels/theme_viewmodel.dart';
 
-late final ThemeViewModel themeViewModel;
-late final StudentListViewModel studentListViewModel;
-late final StudentFormViewModel studentFormViewModel;
-late final StudentDetailViewModel studentDetailViewModel;
+late ThemeViewModel themeViewModel;
+late AuthViewModel authViewModel;
+late StudentListViewModel studentListViewModel;
+late StudentFormViewModel studentFormViewModel;
+late StudentDetailViewModel studentDetailViewModel;
 
-/// Inicializa todas as dependências do projeto seguindo estritamente a hierarquia:
-/// Services -> Repositories -> Use Cases -> Facade de Use Cases -> ViewModel
 Future<void> initDependencies() async {
-  // 1. Instanciação do Service (Acesso ao SQLite)
-  final dbHelper = DatabaseHelper.instance;
-  await dbHelper.database;
-
-  // 2. Instanciação dos Repositories
-  final studentRepo = StudentRepositoryImpl(dbHelper);
-  final themeRepo = ThemeRepositoryImpl(dbHelper);
-
-  // 3. Instanciação dos Use Cases (Regras de Negócio Isoladas)
-  final getStudents = GetStudentsUseCase(studentRepo);
-  final getStudentById = GetStudentByIdUseCase(studentRepo);
-  final saveStudent = SaveStudentUseCase(studentRepo);
-  final deleteStudent = DeleteStudentUseCase(studentRepo);
-  final calculateRanking = const CalculateRankingUseCase();
-
-  final getTheme = GetThemeUseCase(themeRepo);
-  final saveTheme = SaveThemeUseCase(themeRepo);
-
-  // 4. Instanciação das Facades de Use Cases
-  final studentFacade = StudentFacade(
-    getStudentsUseCase: getStudents,
-    getStudentByIdUseCase: getStudentById,
-    saveStudentUseCase: saveStudent,
-    deleteStudentUseCase: deleteStudent,
-    calculateRankingUseCase: calculateRanking,
+  final themeRepo = ThemeRepositoryImpl(SharedPreferencesAsync());
+  themeViewModel = ThemeViewModel(
+    ThemeFacade(
+      getThemeUseCase: GetThemeUseCase(themeRepo),
+      saveThemeUseCase: SaveThemeUseCase(themeRepo),
+    ),
   );
-
-  final themeFacade = ThemeFacade(
-    getThemeUseCase: getTheme,
-    saveThemeUseCase: saveTheme,
-  );
-
-  // 5. Instanciação das ViewModels injetando apenas as Facades correspondentes
-  themeViewModel = ThemeViewModel(themeFacade);
-  studentListViewModel = StudentListViewModel(studentFacade);
-  studentFormViewModel = StudentFormViewModel(studentFacade);
-  studentDetailViewModel = StudentDetailViewModel(studentFacade);
-
-  // Carrega a preferência de tema gravada
   await themeViewModel.loadThemeCommand.execute();
+  authViewModel = AuthViewModel(
+    AuthService(FirebaseAuth.instance),
+    onSessionChanged: _createSessionDependencies,
+  );
+}
+
+/// Descarta referências ao estado da conta anterior antes de liberar as rotas.
+void _createSessionDependencies(String? uid) {
+  final repo = StudentRepositoryImpl(
+    FirebaseFirestore.instance,
+    FirebaseAuth.instance,
+    uid,
+  );
+  final facade = StudentFacade(
+    getStudentsUseCase: GetStudentsUseCase(repo),
+    getStudentByIdUseCase: GetStudentByIdUseCase(repo),
+    saveStudentUseCase: SaveStudentUseCase(repo),
+    deleteStudentUseCase: DeleteStudentUseCase(repo),
+    calculateRankingUseCase: const CalculateRankingUseCase(),
+  );
+  studentListViewModel = StudentListViewModel(facade);
+  studentFormViewModel = StudentFormViewModel(facade);
+  studentDetailViewModel = StudentDetailViewModel(facade);
 }

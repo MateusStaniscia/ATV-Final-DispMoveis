@@ -9,9 +9,7 @@ class AboutScreen extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sobre o App'),
-      ),
+      appBar: AppBar(title: const Text('Sobre o App')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -20,7 +18,7 @@ class AboutScreen extends StatelessWidget {
             // Header Card
             Card(
               elevation: 0,
-              color: theme.colorScheme.primary.withOpacity(0.08),
+              color: theme.colorScheme.primary.withValues(alpha: 0.08),
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
@@ -41,11 +39,8 @@ class AboutScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Versão Didática 1.0.0',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey,
-                      ),
+                      'Versão Didática 2.0.0',
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -65,7 +60,7 @@ class AboutScreen extends StatelessWidget {
                 'de convivência, destaque e participação na turma.\n\n'
                 'Cada aluno recebe notas de 1 a 5 estrelas em 15 categorias. A soma dessas notas forma o '
                 'Nível Lenda, usado para organizar o ranking geral.\n\n'
-                'Todos os dados são armazenados localmente no dispositivo utilizando banco de dados SQLite. '
+                'Os alunos são armazenados na nuvem usando Cloud Firestore, com acesso protegido pelo Firebase Authentication. '
                 'O aplicativo também permite alternar entre tema claro e tema escuro.',
                 style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
               ),
@@ -112,14 +107,19 @@ class AboutScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF334155) : Colors.grey.shade100,
+                      color: isDark
+                          ? const Color(0xFF334155)
+                          : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         _buildStat('Mínimo', '15 pts'),
-                        const Icon(Icons.arrow_forward_rounded, color: Colors.grey),
+                        const Icon(
+                          Icons.arrow_forward_rounded,
+                          color: Colors.grey,
+                        ),
                         _buildStat('Máximo', '75 pts'),
                       ],
                     ),
@@ -127,7 +127,9 @@ class AboutScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   Text(
                     'A ordenação do ranking geral é feita de forma decrescente a partir do total acumulado.',
-                    style: theme.textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
                 ],
               ),
@@ -145,7 +147,7 @@ class AboutScreen extends StatelessWidget {
                   _buildBulletPoint(
                     context,
                     'Persistência:',
-                    'Todos os dados dos alunos cadastrados são salvos localmente no banco de dados SQLite. Eles permanecem salvos mesmo após fechar o aplicativo.',
+                    'Cada conta acessa seus próprios alunos no Cloud Firestore. É necessária conexão com a internet para consultar e alterar os registros.',
                   ),
                   const SizedBox(height: 8),
                   _buildBulletPoint(
@@ -199,7 +201,11 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBulletPoint(BuildContext context, String boldText, String normalText) {
+  Widget _buildBulletPoint(
+    BuildContext context,
+    String boldText,
+    String normalText,
+  ) {
     final theme = Theme.of(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -229,10 +235,7 @@ class AboutScreen extends StatelessWidget {
   Widget _buildStat(String label, String value) {
     return Column(
       children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
-        ),
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
         const SizedBox(height: 4),
         Text(
           value,

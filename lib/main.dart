@@ -1,47 +1,66 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:signals_flutter/signals_flutter.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import 'core/di.dart';
+import 'core/firebase_config.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Inicializa o suporte do SQLite para FFI (Web e Desktop)
-  if (kIsWeb) {
-    databaseFactory = databaseFactoryFfiWeb;
-  } else if (defaultTargetPlatform == TargetPlatform.windows ||
-      defaultTargetPlatform == TargetPlatform.linux ||
-      defaultTargetPlatform == TargetPlatform.macOS) {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
+  try {
+    await FirebaseConfig.initialize();
+    await initDependencies();
+    runApp(const MyApp());
+  } catch (e) {
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          appBar: AppBar(title: const Text('Configuração do Firebase')),
+          body: Padding(
+            padding: const EdgeInsets.all(24),
+            child: SelectableText(
+              'Não foi possível iniciar o aplicativo.\n\n$e\n\n'
+              'Consulte as instruções de configuração no README.',
+            ),
+          ),
+        ),
+      ),
+    );
   }
-
-  // Inicializa a injeção de dependências e preferências locais
-  await initDependencies();
-
-  runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends SignalStatefulWidget {
   const MyApp({super.key});
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late final GoRouter _router = createAppRouter(authViewModel);
+  @override
+  void dispose() {
+    _router.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Assina reativamente o sinal de tema escuro para reconstruir o MaterialApp
-    final isDarkMode = themeViewModel.isDarkMode.watch(context);
-
+    final isDarkMode = themeViewModel.isDarkMode.value;
     return MaterialApp.router(
       title: 'PirâmidGame IFPR-Pgua',
       debugShowCheckedModeBanner: false,
-      routerConfig: appRouter,
+      routerConfig: _router,
       themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
+      builder: (context, child) => FirebaseConfig.useEmulators
+          ? Banner(
+              message: 'EMULADOR',
+              location: BannerLocation.topEnd,
+              child: child!,
+            )
+          : child!,
     );
   }
 }
