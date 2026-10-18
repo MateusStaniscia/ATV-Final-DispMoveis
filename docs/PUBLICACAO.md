@@ -1,8 +1,10 @@
 # Publicar a atualização
 
-A atualização está pronta no commit local e ainda não foi enviada ao GitHub. A integração retornou HTTP 403 ao tentar gravar arquivos; o gerenciador de credenciais do Git também não iniciou no ambiente restrito.
+A implementação foi enviada ao GitHub em 18/10/2026, na branch [feat/firebase-auth-firestore](https://github.com/MateusStaniscia/ATV-Final-DispMoveis/tree/feat/firebase-auth-firestore). A branch `main` permanece sem alteração. A abertura automática de pull request retornou HTTP 403 pela integração; o envio da branch pelo Git foi concluído.
 
-## Opção 1: pacote Git
+A integração com um projeto Firebase real e a conferência da especificação PDF ainda estão pendentes. O PDF recebido em 18/10 estava vazio (0 bytes), portanto não foi possível verificar seus requisitos.
+
+## Cópia alternativa: pacote Git
 
 Use o arquivo ATV-Final-DispMoveis-Firebase.bundle em um terminal normal do seu computador. Ele contém o histórico necessário e a branch com a atualização:
 

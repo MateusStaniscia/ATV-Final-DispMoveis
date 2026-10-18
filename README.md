@@ -17,7 +17,7 @@ Aplicativo Flutter para cadastrar alunos do IFPR - Campus Paranaguá, atribuir n
 
 ## Executar com os emuladores (sem conta Firebase)
 
-Requisitos: Flutter 3.38.9 / Dart 3.10.8 ou versão compatível, Node.js 22+, Java 21+ e Chrome para o teste web. Android usa SDK mínimo 23.
+Requisitos: Flutter 3.38.9 / Dart 3.10.8 ou versão compatível, Node.js 22+, Java 21+ e Chrome para o teste web. Android usa o SDK mínimo definido pelo Flutter (24 na versão 3.38.9).
 
 ```sh
 flutter pub get
