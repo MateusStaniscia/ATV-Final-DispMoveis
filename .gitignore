@@ -50,3 +50,6 @@ node_modules/
 *-debug.log
 config/firebase.json
 config/firebase.*.local.json
+
+.kotlin/
+android/build/

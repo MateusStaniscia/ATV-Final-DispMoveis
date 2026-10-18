@@ -1,41 +1,55 @@
-# Evidências e roteiro de validação
+# Evidências de validação — 18/10/2026
 
-Data da execução local: **17/10/2026**, fuso America/Sao_Paulo.
+Revisão baseada na especificação Firebase/Firestore de 25 páginas. O relatório PDF de 17/10 é histórico e descreve a implementação anterior; esta página e CONFORMIDADE.md representam a versão atual.
 
-## Resultados observados
+## Resultados locais
 
 | Verificação | Resultado |
 |---|---|
-| Flutter analyze | Aprovado, sem problemas |
-| Flutter test | 26 testes aprovados |
-| Firebase Emulator Suite | 20 testes aprovados, zero falhas |
-| Build Web debug, modo emulador | Compilação concluída |
-| Teste adicional Flutter em Chrome | Não concluído: o navegador abriu, mas o executor não recebeu a conexão esperada |
-| Firebase real do aluno | Pendente: projeto ainda não criado |
-| Build/execução em Android físico | Não executados neste ambiente |
+| Análise estática Dart/Flutter | Sem problemas |
+| Testes Flutter | 40 aprovados |
+| Firebase Emulator Suite | 35 aprovados, nenhuma falha |
+| Compilação Android debug | APK gerado em modo emulador |
+| Compilação Web debug | Concluída em modo emulador |
+| OAuth Google real | Pendente de configuração e acesso ao projeto |
+| Firebase remoto real | Pendente; nenhum projeto real configurado nesta sessão |
+| Execução em dispositivo físico | Não realizada |
 
-Ambiente: Windows, Flutter 3.38.9, Dart 3.10.8, Node.js 24.14.1, Java 22.0.2, Firebase CLI 15.34.0 e Firestore Emulator 1.22.0. O workflow usa Node 22 e Java 21. Os pacotes estão fixados nos arquivos de lock.
+Ambiente: Windows, Flutter 3.38.9, Dart 3.10.8, Java 22, Node 24, Firebase CLI 15.34.0. Android SDK 36, mínimo 24, AGP 8.11.1, Kotlin 2.4.21. O workflow usa Java 21 e Node 22 e também compila Android para detectar incompatibilidades nativas.
 
-## O que os testes verificam
+## Cobertura dos 40 testes Flutter
 
-**Flutter (26 casos):**
-- Bloqueio das rotas privadas antes da restauração de sessão e para usuários anônimos.
-- Acesso autenticado, saída e redirecionamento do login.
-- Restauração da sessão, renovação de token sem recriar os dados e erro no stream.
-- Validação de e-mail, confirmação de senha e mensagem de credenciais inválidas na UI.
-- Serialização NoSQL, preservação das notas, validação e normalização dos alunos.
-- Ranking decrescente e desempate alfabético.
+- Sessão: espera pela restauração, rotas privadas, logout e renovação de token.
+- Resposta atrasada do perfil remoto não reabre uma sessão após logout.
+- Login e cadastro validam entradas; mensagem de credenciais inválidas é apresentada.
+- Botão Google dispara o Command correspondente (não é teste de OAuth real).
+- Perfil sem avaliações automáticas, campos válidos e normalização do nome.
+- Avaliação exige os 15 critérios, notas inteiras de 1 a 5, autor/alvo corretos e não permite autoavaliação vinculada.
+- Ranking pessoal ignora as avaliações das demais contas.
+- Ranking global usa a média, não a soma nem a quantidade; exemplo 60, 70 e 65 resulta em 65.
+- Empates por nome/ID; pessoas sem avaliações ou removidas não entram.
+- UI em 390 × 844: abas de pessoas e dois rankings, valores de ranking distintos, formulário sem notas, carregamento de avaliação anterior e total reativo às estrelas.
+- Perfil próprio esconde a opção de avaliar; URL direta de avaliação própria também é bloqueada.
 
-**Firebase (20 casos):**
-- Cadastro e login com o SDK conectado ao Authentication Emulator.
-- Senha errada, cadastro duplicado, solicitação de recuperação e logout.
-- Integração entre token da autenticação e acesso ao Firestore.
-- CRUD completo e listagem dos próprios alunos.
-- Proibição de acesso sem autenticação.
-- Proibição de leitura, listagem, criação, edição e exclusão em outra conta.
-- Rejeição de campos extras, campos ausentes, ID divergente, curso/ano inválidos, notas incompletas ou fora de 1 a 5.
+Os testes adicionais de UI identificaram e corrigiram uma atualização de Signals durante a construção da rota, além da visibilidade das três abas no celular.
 
-Os avisos `PERMISSION_DENIED` nos testes negativos são esperados. Os testes exigem que essas operações falhem. Testes de regras são executados contra o emulador oficial, não apenas contra objetos simulados.
+## Cobertura dos 35 testes Firebase
+
+Os testes executam nos emuladores oficiais Authentication e Firestore, com regras reais, usando apenas dados fictícios.
+
+- Cadastro, login, senha incorreta, cadastro duplicado, recuperação de senha e logout.
+- Token do Authentication autoriza criação de perfil, pessoa e avaliação no Firestore.
+- Pessoas compartilhadas e perfis de autenticação privados.
+- Uma avaliação por usuário/pessoa, atualizada sem duplicação.
+- Autoria, alvo, notas, total e timestamp validados no servidor.
+- Acesso anônimo, alteração de avaliação alheia e falsificação de autoria negados.
+- Vínculo de identidade atômico; não permite vínculos incompletos, segunda pessoa ou remoção do vínculo.
+- Vínculo remove eventual autoavaliação anterior e impede futuras autoavaliações.
+- Pessoa vinculada pode editar perfil criado por outra conta.
+- Remoção lógica bloqueia reativação e novas avaliações.
+- Leitura de avaliações de várias contas para o ranking global.
+
+Mensagens PERMISSION_DENIED nos testes negativos são esperadas e comprovam que as regras rejeitam essas operações.
 
 ## Reproduzir
 
@@ -46,27 +60,22 @@ flutter test
 npm ci
 npm run test:firebase
 flutter build web --debug --dart-define=USE_FIREBASE_EMULATORS=true
+flutter build apk --debug --dart-define=USE_FIREBASE_EMULATORS=true
 ```
 
-O projeto de teste é sempre `demo-piramid-game`. Nenhum teste deve apontar para o projeto real ou para dados pessoais.
+## Validação ainda necessária antes de apresentar
 
-## Roteiro obrigatório antes de apresentar ao professor
+- [ ] Criar o projeto real e publicar regras/índices.
+- [ ] Ativar e-mail/senha e Google; registrar aplicativos e certificados Android.
+- [ ] Entrar com ambos os provedores em Android/Web.
+- [ ] Cadastrar pessoas fictícias e avaliar a mesma pessoa com duas contas.
+- [ ] Conferir documentos e média global no console.
+- [ ] Alterar avaliação sem duplicar; verificar ranking pessoal independente.
+- [ ] Vincular o próprio perfil e testar bloqueio de autoavaliação.
+- [ ] Reabrir o aplicativo e acessar a mesma conta em outro dispositivo.
+- [ ] Fazer logout e abrir URLs privadas diretamente.
+- [ ] Testar perda de internet e confirmar que erros não aparecem como sucesso.
+- [ ] Instalar e executar no Android da apresentação.
+- [ ] Confirmar data definitiva com o professor (13/10 ou 20/10/2026).
 
-Execute estes passos no Firebase real depois da configuração descrita no README. Registre capturas do aplicativo e do console; não marque a validação como concluída antes de executá-la.
-
-- [ ] Criar conta A e confirmar o usuário em Authentication.
-- [ ] Cadastrar aluno fictício e localizar o documento em `users/UID_A/students`.
-- [ ] Editar nome e notas; conferir a alteração no console.
-- [ ] Reabrir o app e confirmar sessão restaurada e dados carregados da nuvem.
-- [ ] Abrir a mesma conta em outro dispositivo/navegador e confirmar o registro.
-- [ ] Fazer logout e tentar abrir diretamente `/home`, `/form`, `/detail/ID` e `/about`.
-- [ ] Criar conta B: os alunos da conta A não devem aparecer.
-- [ ] Testar senha incorreta e recuperação de senha por e-mail real.
-- [ ] Desconectar a internet e confirmar que falhas não são anunciadas como sucesso.
-- [ ] Reconectar, atualizar e excluir o aluno; conferir a exclusão no console.
-- [ ] Executar no Android utilizado na apresentação.
-- [ ] Confirmar com o professor qual data foi definida: 13/10 ou 20/10.
-
-## Limite da evidência
-
-Os testes locais provam o comportamento coberto no ambiente de teste. Eles não comprovam criação, configuração, disponibilidade nem regras publicadas em um projeto Firebase real. Não foi realizada migração dos registros antigos de SQLite.
+Testes de regra, testes de widget e compilação não substituem a demonstração de banco remoto nem comprovam consentimento OAuth Google real. O teste anterior Flutter/Chrome que não conectou ao executor não foi contado como aprovado.

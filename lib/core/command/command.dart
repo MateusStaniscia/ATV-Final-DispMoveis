@@ -20,7 +20,7 @@ class Command<T> {
     if (_isExecuting.value) {
       return Failure(StateError('Este comando já está sendo executado.'));
     }
-    
+
     _isExecuting.value = true;
     try {
       return await _action();

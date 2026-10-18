@@ -1,3 +1,4 @@
+import '../../presentation/ui/evaluation/evaluation_screen.dart';
 import '../../presentation/ui/splash/splash_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'session_redirect.dart';
@@ -23,6 +24,11 @@ GoRouter createAppRouter(AuthViewModel session) => GoRouter(
       builder: (context, state) => LoginScreen(model: session),
     ),
     GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
+    GoRoute(
+      path: '/evaluate/:id',
+      builder: (context, state) =>
+          EvaluationScreen(personId: state.pathParameters['id']!),
+    ),
     GoRoute(path: '/about', builder: (context, state) => const AboutScreen()),
     GoRoute(
       path: '/form',

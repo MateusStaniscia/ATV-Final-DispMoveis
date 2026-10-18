@@ -2,7 +2,7 @@
 
 A implementação foi enviada ao GitHub em 18/10/2026, na branch [feat/firebase-auth-firestore](https://github.com/MateusStaniscia/ATV-Final-DispMoveis/tree/feat/firebase-auth-firestore). A branch `main` permanece sem alteração. A abertura automática de pull request retornou HTTP 403 pela integração; o envio da branch pelo Git foi concluído.
 
-A integração com um projeto Firebase real e a conferência da especificação PDF ainda estão pendentes. O PDF recebido em 18/10 estava vazio (0 bytes), portanto não foi possível verificar seus requisitos.
+O PDF foi recebido novamente e lido integralmente em 18/10/2026. A adaptação está descrita em CONFORMIDADE.md. A integração e validação com um projeto Firebase real ainda dependem de acesso ao console.
 
 ## Cópia alternativa: pacote Git
 
@@ -29,4 +29,4 @@ Extraia ATV-Final-DispMoveis-Firebase.zip para abrir e executar o projeto. O ZIP
 - Validar no Android usado na apresentação.
 - Confirmar a data definitiva com o professor: possibilidades informadas de 13/10 ou 20/10/2026.
 
-Não há comprovação de funcionamento na nuvem antes desses passos. Foram aprovados 26 testes Flutter e 20 testes nos emuladores oficiais, além da análise estática e compilação Web.
+Não há comprovação de funcionamento na nuvem antes desses passos. Foram aprovados testes Flutter e testes nos emuladores oficiais, conforme TESTES.md, além da análise estática e compilação Web.

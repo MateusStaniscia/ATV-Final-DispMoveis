@@ -2,397 +2,173 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import '../../../core/di.dart';
-import '../../../domain/entities/popularity_criteria.dart';
+import '../../../core/result/result.dart';
+import '../../../domain/entities/campus.dart';
 
 class StudentFormScreen extends SignalStatefulWidget {
   final String? studentId;
-
   const StudentFormScreen({super.key, this.studentId});
-
   @override
   State<StudentFormScreen> createState() => _StudentFormScreenState();
 }
 
 class _StudentFormScreenState extends State<StudentFormScreen> {
-  final _viewModel = studentFormViewModel;
-  final _listViewModel = studentListViewModel;
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _nicknameController = TextEditingController();
-
+  final vm = campusViewModel;
+  final form = GlobalKey<FormState>();
+  final name = TextEditingController(), nickname = TextEditingController();
+  String course = 'INFO';
+  int year = 2026;
+  DateTime birthDate = DateTime(2000);
+  bool loading = true;
+  Person? original;
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      if (widget.studentId != null) {
-        _viewModel.loadStudentForEditCommand.execute(widget.studentId!);
-      } else {
-        _viewModel.reset();
-      }
+      if (mounted) _load();
     });
+  }
 
-    // Sincroniza controles de texto com os sinais da ViewModel
-    _nameController.addListener(() {
-      _viewModel.name.value = _nameController.text;
-    });
-    _nicknameController.addListener(() {
-      _viewModel.nickname.value = _nicknameController.text;
-    });
+  Future<void> _load() async {
+    if (widget.studentId != null) {
+      await vm.loadCommand.execute();
+      if (!mounted) return;
+      original = vm.person(widget.studentId!);
+      if (original != null) {
+        name.text = original!.name;
+        nickname.text = original!.nickname;
+        course = original!.course;
+        year = original!.year;
+        birthDate = original!.birthDate;
+      }
+    }
+    if (mounted) setState(() => loading = false);
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _nicknameController.dispose();
+    name.dispose();
+    nickname.dispose();
     super.dispose();
   }
 
-  Future<void> _selectBirthDate(
-    BuildContext context,
-    DateTime currentDate,
-  ) async {
-    final theme = Theme.of(context);
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: currentDate,
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: theme.copyWith(
-            colorScheme: theme.colorScheme.copyWith(
-              primary: theme.colorScheme.primary,
-            ),
-          ),
-          child: child!,
-        );
-      },
+  Future<void> _save() async {
+    if (!form.currentState!.validate()) return;
+    final result = await vm.savePersonCommand.execute(
+      Person(
+        id: original?.id ?? '',
+        name: name.text,
+        nickname: nickname.text,
+        course: course,
+        year: year,
+        birthDate: birthDate,
+        createdBy: original?.createdBy ?? vm.uid,
+        linkedUid: original?.linkedUid,
+      ),
     );
-    if (picked != null && picked != currentDate) {
-      _viewModel.birthDate.value = picked;
+    if (!mounted) return;
+    if (result is Success<void>) {
+      context.go('/home');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    // Assina os sinais reativos da ViewModel
-    final isEdit = _viewModel.isEditMode.value;
-    final isSaving = _viewModel.saveStudentCommand.isExecutingSignal.value;
-    final isLoadingData =
-        _viewModel.loadStudentForEditCommand.isExecutingSignal.value;
-
-    final currentCourse = _viewModel.course.value;
-    final currentYear = _viewModel.year.value;
-    final currentBirthDate = _viewModel.birthDate.value;
-    final currentScores = _viewModel.scores.value;
-    final legendLevelVal = _viewModel.legendLevel.value;
-    final error = _viewModel.errorMessage.value;
-    final successVal = _viewModel.success.value;
-
-    // Efeito para sincronizar texto ao carregar dados do modo edição
-    final vmName = _viewModel.name.value;
-    final vmNickname = _viewModel.nickname.value;
-    if (isEdit && _nameController.text != vmName) {
-      _nameController.text = vmName;
-    }
-    if (isEdit && _nicknameController.text != vmNickname) {
-      _nicknameController.text = vmNickname;
-    }
-
-    // Escuta o sucesso para navegar de volta
-    if (successVal) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _viewModel.success.value = false;
-        _viewModel.reset();
-        _listViewModel.loadStudentsCommand.execute();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isEdit
-                  ? 'Aluno atualizado com sucesso!'
-                  : 'Aluno cadastrado com sucesso!',
-            ),
-          ),
-        );
-        if (context.canPop()) {
-          context.pop();
-        } else {
-          context.go('/home');
-        }
-      });
-    }
-
-    // Escuta erros para mostrar mensagem
-    if (error.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error), backgroundColor: Colors.red),
-        );
-        _viewModel.errorMessage.value = '';
-      });
-    }
-
-    final coursesList = ['INFO', 'MEC', 'MAMB', 'PROD', 'TADS', 'TGA'];
-    final yearsList = List<int>.generate(2026 - 1998 + 1, (i) => 1998 + i);
-
-    final formattedBirthDate =
-        '${currentBirthDate.day.toString().padLeft(2, '0')}/${currentBirthDate.month.toString().padLeft(2, '0')}/${currentBirthDate.year}';
-
+    final unavailable =
+        widget.studentId != null &&
+        (original == null || !vm.canEdit(original!));
     return Scaffold(
-      appBar: AppBar(title: Text(isEdit ? 'Editar Aluno' : 'Cadastrar Aluno')),
-      body: isLoadingData
-          ? const Center(child: CircularProgressIndicator.adaptive())
-          : Form(
-              key: _formKey,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Seção de Cadastro
-                    Text(
-                      'Dados Cadastrais',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          children: [
-                            TextFormField(
-                              controller: _nameController,
-                              decoration: const InputDecoration(
-                                labelText: 'Nome do Aluno *',
-                                prefixIcon: Icon(Icons.person_outline),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'O nome é obrigatório';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _nicknameController,
-                              decoration: const InputDecoration(
-                                labelText: 'Apelido (Opcional)',
-                                prefixIcon: Icon(Icons.alternate_email),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: DropdownButtonFormField<String>(
-                                    initialValue: currentCourse,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Curso',
-                                    ),
-                                    items: coursesList.map((course) {
-                                      return DropdownMenuItem<String>(
-                                        value: course,
-                                        child: Text(course),
-                                      );
-                                    }).toList(),
-                                    onChanged: (val) {
-                                      if (val != null) {
-                                        _viewModel.course.value = val;
-                                      }
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: DropdownButtonFormField<int>(
-                                    initialValue: currentYear,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Ano',
-                                    ),
-                                    items: yearsList.map((year) {
-                                      return DropdownMenuItem<int>(
-                                        value: year,
-                                        child: Text('$year'),
-                                      );
-                                    }).toList(),
-                                    onChanged: (val) {
-                                      if (val != null) {
-                                        _viewModel.year.value = val;
-                                      }
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            InkWell(
-                              onTap: () =>
-                                  _selectBirthDate(context, currentBirthDate),
-                              borderRadius: BorderRadius.circular(12),
-                              child: InputDecorator(
-                                decoration: const InputDecoration(
-                                  labelText: 'Data de Nascimento',
-                                  prefixIcon: Icon(
-                                    Icons.calendar_today_outlined,
-                                  ),
-                                ),
-                                child: Text(
-                                  formattedBirthDate,
-                                  style: const TextStyle(fontSize: 16),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Seção de Critérios
-                    Text(
-                      'Critérios de Avaliação',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    ...PopularityCriteria.values.map((criteria) {
-                      final score = currentScores[criteria.id] ?? 3;
-                      return _buildCriteriaFormRow(criteria, score);
-                    }),
-                    const SizedBox(
-                      height: 100,
-                    ), // Espaço inferior para o botão fixo
-                  ],
-                ),
-              ),
-            ),
-      bottomSheet: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: theme.scaffoldBackgroundColor,
-          border: Border(
-            top: BorderSide(
-              color: isDark ? const Color(0xFF334155) : Colors.grey.shade200,
-            ),
-          ),
+      appBar: AppBar(
+        title: Text(
+          widget.studentId == null ? 'Cadastrar pessoa' : 'Editar pessoa',
         ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+      ),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : unavailable
+          ? const Center(
+              child: Text('Pessoa indisponível ou sem permissão para editar.'),
+            )
+          : Form(
+              key: form,
+              child: ListView(
+                padding: const EdgeInsets.all(20),
                 children: [
                   const Text(
-                    'Nível Lenda:',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    'O cadastro cria um perfil para avaliação, sem criar uma conta de login.',
                   ),
-                  Text(
-                    '$legendLevelVal pontos',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: theme.colorScheme.primary,
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: name,
+                    maxLength: 120,
+                    decoration: const InputDecoration(labelText: 'Nome'),
+                    validator: (v) =>
+                        (v?.trim().isEmpty ?? true) ? 'Informe o nome.' : null,
+                  ),
+                  TextFormField(
+                    controller: nickname,
+                    maxLength: 60,
+                    decoration: const InputDecoration(
+                      labelText: 'Apelido (opcional)',
+                    ),
+                  ),
+                  DropdownButtonFormField<String>(
+                    initialValue: course,
+                    decoration: const InputDecoration(labelText: 'Curso'),
+                    items: ['INFO', 'MEC', 'MAMB', 'PROD', 'TADS', 'TGA']
+                        .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                        .toList(),
+                    onChanged: (v) => setState(() => course = v!),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<int>(
+                    initialValue: year,
+                    decoration: const InputDecoration(labelText: 'Turma / ano'),
+                    items: List.generate(29, (i) => 2026 - i)
+                        .map(
+                          (y) => DropdownMenuItem(value: y, child: Text('$y')),
+                        )
+                        .toList(),
+                    onChanged: (v) => setState(() => year = v!),
+                  ),
+                  const SizedBox(height: 16),
+                  ListTile(
+                    title: const Text('Data de nascimento'),
+                    subtitle: Text(
+                      '${birthDate.day}/${birthDate.month}/${birthDate.year}',
+                    ),
+                    trailing: const Icon(Icons.calendar_month),
+                    onTap: () async {
+                      final date = await showDatePicker(
+                        context: context,
+                        initialDate: birthDate,
+                        firstDate: DateTime(1900),
+                        lastDate: DateTime.now(),
+                      );
+                      if (date != null && mounted) {
+                        setState(() => birthDate = date);
+                      }
+                    },
+                  ),
+                  if (vm.error.value.isNotEmpty)
+                    Text(
+                      vm.error.value,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  const SizedBox(height: 20),
+                  FilledButton(
+                    onPressed: vm.savePersonCommand.isExecuting ? null : _save,
+                    child: Text(
+                      vm.savePersonCommand.isExecuting
+                          ? 'Salvando…'
+                          : 'Salvar pessoa',
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              flex: 2,
-              child: isSaving
-                  ? const Center(child: CircularProgressIndicator.adaptive())
-                  : ElevatedButton(
-                      onPressed: isLoadingData || !_viewModel.editLoaded.value
-                          ? null
-                          : () {
-                              if (_formKey.currentState!.validate()) {
-                                _viewModel.saveStudentCommand.execute();
-                              }
-                            },
-                      child: Text(
-                        isEdit ? 'Salvar Alterações' : 'Cadastrar Aluno',
-                      ),
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCriteriaFormRow(PopularityCriteria criteria, int score) {
-    final theme = Theme.of(context);
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    criteria.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-                // Estrelas Interativas
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: List.generate(5, (starIndex) {
-                    final starValue = starIndex + 1;
-                    final isSelected = starValue <= score;
-                    return GestureDetector(
-                      onTap: () {
-                        _viewModel.updateScore(criteria.id, starValue);
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Icon(
-                          isSelected
-                              ? Icons.star_rounded
-                              : Icons.star_border_rounded,
-                          color: isSelected
-                              ? Colors.amber
-                              : Colors.grey.shade400,
-                          size: 28,
-                        ),
-                      ),
-                    );
-                  }),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              criteria.description,
-              style: TextStyle(
-                fontSize: 12,
-                color: theme.textTheme.bodyMedium?.color?.withValues(
-                  alpha: 0.7,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

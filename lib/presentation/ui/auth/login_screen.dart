@@ -71,7 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         Text(
                           _register
                               ? 'Crie sua conta'
-                              : 'Entre para acessar seus alunos e ranking',
+                              : 'Entre para avaliar pessoas do campus',
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 32),
@@ -156,6 +156,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 )
                               : Text(_register ? 'Criar conta' : 'Entrar'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: model.busy
+                              ? null
+                              : () => model.loginGoogleCommand.execute(),
+                          icon: const Icon(Icons.account_circle_outlined),
+                          label: const Text('Entrar com Google'),
                         ),
                         TextButton(
                           onPressed: model.busy

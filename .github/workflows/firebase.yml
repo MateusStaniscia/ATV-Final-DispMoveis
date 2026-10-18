@@ -23,6 +23,7 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
-      - run: flutter build web
+      - run: flutter build web --debug --dart-define=USE_FIREBASE_EMULATORS=true
+      - run: flutter build apk --debug --dart-define=USE_FIREBASE_EMULATORS=true
       - run: npm ci
       - run: npm run test:firebase

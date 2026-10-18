@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'core/di.dart';
+import 'presentation/ui/splash/splash_screen.dart';
 import 'core/firebase_config.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  runApp(MaterialApp(theme: AppTheme.light, home: const SplashScreen()));
   try {
     await FirebaseConfig.initialize();
     await initDependencies();

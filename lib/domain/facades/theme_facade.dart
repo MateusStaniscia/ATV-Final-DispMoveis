@@ -9,8 +9,8 @@ class ThemeFacade {
   const ThemeFacade({
     required GetThemeUseCase getThemeUseCase,
     required SaveThemeUseCase saveThemeUseCase,
-  })  : _getThemeUseCase = getThemeUseCase,
-        _saveThemeUseCase = saveThemeUseCase;
+  }) : _getThemeUseCase = getThemeUseCase,
+       _saveThemeUseCase = saveThemeUseCase;
 
   Future<Result<bool>> getTheme() {
     return _getThemeUseCase();

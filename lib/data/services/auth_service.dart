@@ -1,8 +1,31 @@
+import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthService {
   final FirebaseAuth auth;
   AuthService(this.auth);
+
+  Future<void>? _googleInitialization;
+  Future<void> google() async {
+    if (kIsWeb) {
+      await auth.signInWithPopup(
+        GoogleAuthProvider()..setCustomParameters({'prompt': 'select_account'}),
+      );
+    } else {
+      const clientId = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
+      _googleInitialization ??= GoogleSignIn.instance.initialize(
+        serverClientId: clientId.isEmpty ? null : clientId,
+      );
+      await _googleInitialization;
+      final account = await GoogleSignIn.instance.authenticate();
+      final token = account.authentication.idToken;
+      if (token == null) throw StateError('Google não retornou um token.');
+      await auth.signInWithCredential(
+        GoogleAuthProvider.credential(idToken: token),
+      );
+    }
+  }
 
   Future<void> signIn(String email, String password) async {
     await auth.signInWithEmailAndPassword(
@@ -23,6 +46,9 @@ class AuthService {
   Future<void> signOut() => auth.signOut();
 
   static String errorMessage(Object error) {
+    if (error is GoogleSignInException) {
+      return 'Login Google cancelado ou indisponível. Confira a configuração Google do aplicativo.';
+    }
     if (error is FirebaseAuthException) {
       return switch (error.code) {
         'invalid-email' => 'Informe um e-mail válido.',
@@ -36,7 +62,7 @@ class AuthService {
           'Sem conexão. Verifique sua internet e tente novamente.',
         'too-many-requests' => 'Muitas tentativas. Aguarde e tente novamente.',
         'operation-not-allowed' =>
-          'Ative o login por e-mail e senha no Firebase Console.',
+          'Ative este provedor de login no Firebase Console.',
         _ => 'Não foi possível autenticar. Tente novamente.',
       };
     }

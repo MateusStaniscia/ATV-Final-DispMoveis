@@ -8,6 +8,7 @@ void main() {
     '/form?id=aluno',
     '/detail/aluno',
     '/about',
+    '/evaluate/pessoa',
   ]) {
     test('bloqueia acesso anônimo a $path', () {
       expect(

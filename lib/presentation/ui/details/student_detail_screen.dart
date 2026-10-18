@@ -1,264 +1,161 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import '../../../core/di.dart';
+import '../../../core/result/result.dart';
 import '../../../domain/entities/popularity_criteria.dart';
 
 class StudentDetailScreen extends SignalStatefulWidget {
   final String studentId;
-
   const StudentDetailScreen({super.key, required this.studentId});
-
   @override
   State<StudentDetailScreen> createState() => _StudentDetailScreenState();
 }
 
 class _StudentDetailScreenState extends State<StudentDetailScreen> {
-  final _viewModel = studentDetailViewModel;
+  final vm = campusViewModel;
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _viewModel.loadStudentCommand.execute(widget.studentId);
+      if (mounted) vm.loadCommand.execute();
     });
   }
 
+  Future<bool> _confirm(String title, String text) async =>
+      await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(title),
+          content: Text(text),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Confirmar'),
+            ),
+          ],
+        ),
+      ) ??
+      false;
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    // Assina os sinais reativos da ViewModel
-    final student = _viewModel.student.value;
-    final isLoading = _viewModel.loadStudentCommand.isExecutingSignal.value;
-    final error = _viewModel.errorMessage.value;
-
+    final p = vm.person(widget.studentId),
+        rating = vm.myEvaluation(widget.studentId);
+    final busy =
+        vm.linkPersonCommand.isExecuting || vm.removePersonCommand.isExecuting;
     return Scaffold(
-      appBar: AppBar(title: const Text('Ficha do Aluno')),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator.adaptive())
-          : error.isNotEmpty
+      appBar: AppBar(title: const Text('Detalhes da pessoa')),
+      body: vm.loadCommand.isExecuting
+          ? const Center(child: CircularProgressIndicator())
+          : p == null
           ? Center(
               child: Text(
-                error,
-                style: const TextStyle(color: Colors.red, fontSize: 16),
+                vm.error.value.isEmpty
+                    ? 'Pessoa não encontrada.'
+                    : vm.error.value,
               ),
             )
-          : student == null
-          ? const Center(child: Text('Aluno não encontrado.'))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Card de Perfil Básico
-                  _buildProfileCard(context, student),
-                  const SizedBox(height: 20),
-
-                  // Header da Seção de Critérios
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Critérios de Popularidade',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        '15 Categorias',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Lista de Notas dos 15 Critérios
-                  ...PopularityCriteria.values.map((criteria) {
-                    final score = student.scores[criteria.id] ?? 1;
-                    return _buildCriteriaRow(context, criteria, score);
-                  }),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
-    );
-  }
-
-  Widget _buildProfileCard(BuildContext context, dynamic student) {
-    final theme = Theme.of(context);
-
-    // Formata data de nascimento de forma legível
-    final date = student.birthDate as DateTime;
-    final formattedBirthDate =
-        '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-
-    return Card(
-      elevation: 0,
-      color: theme.colorScheme.primary.withValues(alpha: 0.06),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Row(
+          : ListView(
+              padding: const EdgeInsets.all(20),
               children: [
-                CircleAvatar(
-                  radius: 32,
-                  backgroundColor: theme.colorScheme.primary.withValues(
-                    alpha: 0.15,
-                  ),
-                  child: Text(
-                    student.name.isNotEmpty
-                        ? student.name[0].toUpperCase()
-                        : '?',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        student.name,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      if (student.nickname.isNotEmpty)
-                        Text(
-                          'Vulgo: "${student.nickname}"',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: theme.colorScheme.secondary,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 14),
-              child: Divider(),
-            ),
-            _buildInfoRow('Curso:', student.course),
-            const SizedBox(height: 8),
-            _buildInfoRow('Turma/Ano:', '${student.year}'),
-            const SizedBox(height: 8),
-            _buildInfoRow('Nascimento:', formattedBirthDate),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 14),
-              child: Divider(),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Nível Lenda:',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '${student.legendLevel} pontos',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            color: Colors.grey,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCriteriaRow(
-    BuildContext context,
-    PopularityCriteria criteria,
-    int score,
-  ) {
-    final theme = Theme.of(context);
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+                Text(p.name, style: Theme.of(context).textTheme.headlineMedium),
+                Text(p.nickname),
+                Text('${p.course} • Turma ${p.year}'),
                 Text(
-                  criteria.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                  'Nascimento: ${p.birthDate.day}/${p.birthDate.month}/${p.birthDate.year}',
+                ),
+                const SizedBox(height: 20),
+                if (p.linkedUid == vm.uid)
+                  const Text(
+                    'Este é o seu perfil. A autoavaliação está bloqueada.',
                   ),
+                if (p.linkedUid == null && vm.data.value.myPersonId == null)
+                  OutlinedButton(
+                    onPressed: busy
+                        ? null
+                        : () async {
+                            if (!await _confirm(
+                              'Vincular meu perfil',
+                              'Confirma que esta pessoa é você? O vínculo é permanente no aplicativo e remove uma eventual avaliação sua deste perfil.',
+                            )) {
+                              return;
+                            }
+                            await vm.linkPersonCommand.execute(p.id);
+                          },
+                    child: const Text('Esta pessoa sou eu'),
+                  ),
+                if (vm.canEvaluate(p))
+                  FilledButton.icon(
+                    onPressed: busy
+                        ? null
+                        : () => context.push('/evaluate/${p.id}'),
+                    icon: const Icon(Icons.star),
+                    label: Text(
+                      rating == null
+                          ? 'Avaliar pessoa'
+                          : 'Alterar minha avaliação',
+                    ),
+                  ),
+                if (vm.canEdit(p))
+                  OutlinedButton(
+                    onPressed: busy
+                        ? null
+                        : () => context.push('/form?id=${p.id}'),
+                    child: const Text('Editar cadastro'),
+                  ),
+                if (vm.canRemove(p))
+                  TextButton(
+                    onPressed: busy
+                        ? null
+                        : () async {
+                            if (!await _confirm(
+                              'Remover pessoa',
+                              'Remover ${p.name} do cadastro e dos rankings? Não será possível restaurar pelo aplicativo. As avaliações serão preservadas no histórico remoto.',
+                            )) {
+                              return;
+                            }
+                            final result = await vm.removePersonCommand.execute(
+                              p.id,
+                            );
+                            if (context.mounted && result is Success<void>) {
+                              context.go('/home');
+                            }
+                          },
+                    child: const Text('Remover pessoa'),
+                  ),
+                if (vm.error.value.isNotEmpty)
+                  Text(
+                    vm.error.value,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                const Divider(),
+                Text(
+                  'Minha avaliação',
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
-                // Exibição de Estrelas
-                Row(
-                  children: List.generate(5, (starIndex) {
-                    final isFilled = starIndex < score;
-                    return Icon(
-                      isFilled ? Icons.star_rounded : Icons.star_border_rounded,
-                      color: isFilled ? Colors.amber : Colors.grey.shade400,
-                      size: 20,
-                    );
-                  }),
-                ),
+                if (rating == null)
+                  const Text('Você ainda não avaliou esta pessoa.')
+                else ...[
+                  Text('Nível Lenda: ${rating.total} / 75 pontos'),
+                  Text(
+                    'Atualizada em ${rating.date.day}/${rating.date.month}/${rating.date.year}',
+                  ),
+                  for (final c in PopularityCriteria.values)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(c.name),
+                      subtitle: Text(c.description),
+                      trailing: Text('${rating.scores[c.id]} ★'),
+                    ),
+                ],
               ],
             ),
-            const SizedBox(height: 6),
-            Text(
-              criteria.description,
-              style: TextStyle(
-                fontSize: 12,
-                color: theme.textTheme.bodyMedium?.color?.withValues(
-                  alpha: 0.7,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { initializeApp, deleteApp } = require('firebase/app');
 const { getAuth, connectAuthEmulator, createUserWithEmailAndPassword,
   signInWithEmailAndPassword, signOut, sendPasswordResetEmail } = require('firebase/auth');
-const { getFirestore, connectFirestoreEmulator, doc, setDoc, getDoc, terminate } = require('firebase/firestore');
+const { getFirestore, connectFirestoreEmulator, doc, setDoc, getDoc, terminate, Timestamp, serverTimestamp } = require('firebase/firestore');
 const scores=Object.fromEntries(["resenha","presenca_vip","aura","modo_parceiro","carisma_natural","humor_de_milhoes","energia_de_grupo","criatividade_caotica","modo_atleta","talento_de_palco","drip_escolar","coracao_de_dorama","queridinho_dos_professores","cerebro_turbo","caos_controlado"].map(k=>[k,3]));
 test('Authentication real do emulador: cadastro, senha errada, login, reset e logout', async () => {
   const app=initializeApp({apiKey:'demo-api-key',projectId:'demo-piramid-game'},'auth-'+Date.now());
@@ -15,10 +15,14 @@ test('Authentication real do emulador: cadastro, senha errada, login, reset e lo
   try {
     const credential=await createUserWithEmailAndPassword(auth,email,password);
     const uid=credential.user.uid;
-    const ref=doc(db,'users',uid,'students','integracao');
-    await setDoc(ref,{id:'integracao',name:'Integração',course:'TADS',year:2026,
-      nickname:'',birthDate:'2000-01-01T00:00:00.000',scores});
-    assert.equal((await getDoc(ref)).data().name,'Integração');
+    const ref=doc(db,'people','integracao');
+    await setDoc(doc(db,'users',uid), {name:'',email,photo:'',provider:'password',personId:null});
+    await setDoc(ref,{name:'Integracao',course:'TADS',year:2026,nickname:'',
+      birthDate:Timestamp.fromDate(new Date('2000-01-01')),createdBy:uid,linkedUid:null,active:true});
+    assert.equal((await getDoc(ref)).data().name,'Integracao');
+    await setDoc(doc(db,'people','integracao','ratings',uid),
+      {evaluatorUid:uid,personId:'integracao',scores,total:45,date:serverTimestamp()});
+    assert.equal((await getDoc(doc(db,'users',uid))).data().email,email);
     await sendPasswordResetEmail(auth,email);
     await signOut(auth);
     assert.equal(auth.currentUser,null);

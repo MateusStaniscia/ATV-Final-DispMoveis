@@ -1,67 +1,68 @@
 import 'dart:async';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:piramid_game/core/result/result.dart';
+import 'package:piramid_game/domain/entities/session_user.dart';
+import 'package:piramid_game/domain/repositories/auth_repository.dart';
+import 'package:piramid_game/domain/facades/auth_facade.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:piramid_game/data/services/auth_service.dart';
 import 'package:piramid_game/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:piramid_game/presentation/ui/auth/login_screen.dart';
 
-class TestUser extends Fake implements User {
-  @override
-  final String uid;
-  TestUser(this.uid);
-}
-
-class TestAuth extends Fake implements FirebaseAuth {
-  final stream = StreamController<User?>.broadcast();
-  @override
-  Stream<User?> idTokenChanges() => stream.stream;
-}
-
-class TestService extends AuthService {
-  int signInCalls = 0;
-  int registerCalls = 0;
+class TestService extends Fake implements AuthRepository {
+  final stream = StreamController<Result<SessionUser?>>.broadcast();
+  int signInCalls = 0, registerCalls = 0, googleCalls = 0;
   bool fail = false;
-  TestService(super.auth);
   @override
-  Future<void> signIn(String email, String password) async {
+  Stream<Result<SessionUser?>> get session => stream.stream;
+  @override
+  Future<Result<void>> signIn(Credentials credentials) async {
     signInCalls++;
-    if (fail) throw FirebaseAuthException(code: 'invalid-credential');
+    return fail
+        ? Failure(StateError('invalid'), 'E-mail ou senha incorretos.')
+        : const Success(null);
   }
 
   @override
-  Future<void> register(String email, String password) async {
+  Future<Result<void>> register(Credentials credentials) async {
     registerCalls++;
+    return const Success(null);
   }
 
   @override
-  Future<void> signOut() async {
-    (auth as TestAuth).stream.add(null);
+  Future<Result<void>> google() async {
+    googleCalls++;
+    return const Success(null);
+  }
+
+  @override
+  Future<Result<void>> signOut() async {
+    stream.add(const Success(null));
+    return const Success(null);
   }
 }
 
 void main() {
-  late TestAuth auth;
   late TestService service;
   late AuthViewModel model;
   late List<String?> sessions;
   setUp(() {
-    auth = TestAuth();
-    service = TestService(auth);
+    service = TestService();
     sessions = [];
-    model = AuthViewModel(service, onSessionChanged: sessions.add);
+    model = AuthViewModel(AuthFacade(service), onSessionChanged: sessions.add);
   });
   tearDown(() async {
     model.dispose();
-    await auth.stream.close();
+    await service.stream.close();
   });
   test('aguarda SDK, restaura usuário e limpa sessão ao sair', () async {
     expect(model.ready, false);
-    auth.stream.add(TestUser('alice'));
+    service.stream.add(const Success(SessionUser(uid: 'alice')));
     await Future<void>.delayed(Duration.zero);
     expect(model.ready, true);
     expect(model.user?.uid, 'alice');
-    auth.stream.add(TestUser('alice')); // refresh não recria os dados
+    service.stream.add(
+      const Success(SessionUser(uid: 'alice')),
+    ); // refresh não recria os dados
     await Future<void>.delayed(Duration.zero);
     expect(sessions, ['alice']);
     await model.signOut();
@@ -70,13 +71,19 @@ void main() {
     expect(sessions, ['alice', null]);
   });
   test('erro no stream fecha acesso e limpa dados', () async {
-    auth.stream.add(TestUser('alice'));
+    service.stream.add(const Success(SessionUser(uid: 'alice')));
     await Future<void>.delayed(Duration.zero);
-    auth.stream.addError(FirebaseAuthException(code: 'user-disabled'));
+    service.stream.addError(StateError('session failure'));
     await Future<void>.delayed(Duration.zero);
     expect(model.user, null);
-    expect(model.error, contains('desativada'));
+    expect(model.error, contains('verificada'));
     expect(sessions.last, null);
+  });
+  testWidgets('Google usa o comando da ViewModel', (tester) async {
+    await tester.pumpWidget(MaterialApp(home: LoginScreen(model: model)));
+    await tester.tap(find.text('Entrar com Google'));
+    await tester.pumpAndSettle();
+    expect(service.googleCalls, 1);
   });
   testWidgets('login valida campos antes de chamar Firebase', (tester) async {
     await tester.pumpWidget(MaterialApp(home: LoginScreen(model: model)));
