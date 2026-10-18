@@ -1,46 +1,90 @@
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    function owner(uid) {
-      return request.auth != null && request.auth.uid == uid;
-    }
-    function validScore(value) {
-      return value is int && value >= 1 && value <= 5;
-    }
-    function validStudent(id) {
-      let d = request.resource.data;
-      return d.keys().hasAll(['id', 'name', 'course', 'year', 'nickname', 'birthDate', 'scores'])
-        && d.keys().hasOnly(['id', 'name', 'course', 'year', 'nickname', 'birthDate', 'scores'])
-        && d.id == id
-        && d.name is string && d.name.size() > 0 && d.name.size() <= 120
-        && d.name.matches('.*[^ ].*')
-        && d.course in ['INFO', 'MEC', 'MAMB', 'PROD', 'TADS', 'TGA']
-        && d.year is int && d.year >= 1998 && d.year <= 2026
-        && d.nickname is string && d.nickname.size() <= 60
-        && d.birthDate is string && d.birthDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T.*$')
-        && d.scores is map
-        && d.scores.keys().hasAll(["resenha","presenca_vip","aura","modo_parceiro","carisma_natural","humor_de_milhoes","energia_de_grupo","criatividade_caotica","modo_atleta","talento_de_palco","drip_escolar","coracao_de_dorama","queridinho_dos_professores","cerebro_turbo","caos_controlado"])
-        && d.scores.keys().hasOnly(["resenha","presenca_vip","aura","modo_parceiro","carisma_natural","humor_de_milhoes","energia_de_grupo","criatividade_caotica","modo_atleta","talento_de_palco","drip_escolar","coracao_de_dorama","queridinho_dos_professores","cerebro_turbo","caos_controlado"])
-        && validScore(d.scores.resenha)
-        && validScore(d.scores.presenca_vip)
-        && validScore(d.scores.aura)
-        && validScore(d.scores.modo_parceiro)
-        && validScore(d.scores.carisma_natural)
-        && validScore(d.scores.humor_de_milhoes)
-        && validScore(d.scores.energia_de_grupo)
-        && validScore(d.scores.criatividade_caotica)
-        && validScore(d.scores.modo_atleta)
-        && validScore(d.scores.talento_de_palco)
-        && validScore(d.scores.drip_escolar)
-        && validScore(d.scores.coracao_de_dorama)
-        && validScore(d.scores.queridinho_dos_professores)
-        && validScore(d.scores.cerebro_turbo)
-        && validScore(d.scores.caos_controlado);
-    }
-    match /users/{uid}/students/{id} {
-      allow read, delete: if owner(uid);
-      allow create, update: if owner(uid) && validStudent(id);
-    }
-    // Qualquer outro caminho permanece bloqueado.
-  }
-}
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function owner(uid) { return signedIn() && request.auth.uid == uid; }
+    function score(n) { return n is int && n >= 1 && n <= 5; }
+    function validScores(s) {
+      return s is map && s.keys().hasAll(['resenha', 'presenca_vip', 'aura', 'modo_parceiro', 'carisma_natural', 'humor_de_milhoes', 'energia_de_grupo', 'criatividade_caotica', 'modo_atleta', 'talento_de_palco', 'drip_escolar', 'coracao_de_dorama', 'queridinho_dos_professores', 'cerebro_turbo', 'caos_controlado']) && s.keys().hasOnly(['resenha', 'presenca_vip', 'aura', 'modo_parceiro', 'carisma_natural', 'humor_de_milhoes', 'energia_de_grupo', 'criatividade_caotica', 'modo_atleta', 'talento_de_palco', 'drip_escolar', 'coracao_de_dorama', 'queridinho_dos_professores', 'cerebro_turbo', 'caos_controlado'])
+        && score(s.resenha)
+        && score(s.presenca_vip)
+        && score(s.aura)
+        && score(s.modo_parceiro)
+        && score(s.carisma_natural)
+        && score(s.humor_de_milhoes)
+        && score(s.energia_de_grupo)
+        && score(s.criatividade_caotica)
+        && score(s.modo_atleta)
+        && score(s.talento_de_palco)
+        && score(s.drip_escolar)
+        && score(s.coracao_de_dorama)
+        && score(s.queridinho_dos_professores)
+        && score(s.cerebro_turbo)
+        && score(s.caos_controlado);
+    }
+    function total(s) { return s.resenha + s.presenca_vip + s.aura + s.modo_parceiro + s.carisma_natural + s.humor_de_milhoes + s.energia_de_grupo + s.criatividade_caotica + s.modo_atleta + s.talento_de_palco + s.drip_escolar + s.coracao_de_dorama + s.queridinho_dos_professores + s.cerebro_turbo + s.caos_controlado; }
+    function validPerson(d) {
+      return d.keys().hasAll(['name','nickname','course','year','birthDate','createdBy','linkedUid','active'])
+        && d.keys().hasOnly(['name','nickname','course','year','birthDate','createdBy','linkedUid','active'])
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 120 && d.name.matches('.*[^ ].*')
+        && d.nickname is string && d.nickname.size() <= 60
+        && d.course in ['INFO','MEC','MAMB','PROD','TADS','TGA']
+        && d.year is int && d.year >= 1998 && d.year <= 2026
+        && d.birthDate is timestamp && d.birthDate >= timestamp.date(1900,1,1) && d.birthDate <= request.time
+        && d.createdBy is string && d.createdBy.size() > 0
+        && (d.linkedUid == null || d.linkedUid is string) && d.active is bool;
+    }
+    function validProfile(d) {
+      return d.keys().hasAll(['name','email','photo','provider','personId'])
+        && d.keys().hasOnly(['name','email','photo','provider','personId'])
+        && d.name is string && d.name.size() <= 300
+        && d.email is string && d.email.size() <= 320
+        && d.photo is string && d.photo.size() <= 2048
+        && d.provider is string && d.provider.size() <= 200
+        && (d.personId == null || d.personId is string);
+    }
+    match /users/{uid} {
+      allow read: if owner(uid);
+      allow create: if owner(uid) && validProfile(request.resource.data) && request.resource.data.personId == null;
+      allow update: if owner(uid) && validProfile(request.resource.data) && (
+        request.resource.data.personId == resource.data.personId || (
+          resource.data.personId == null && request.resource.data.personId is string
+          && getAfter(/databases/$(database)/documents/people/$(request.resource.data.personId)).data.linkedUid == uid
+          && getAfter(/databases/$(database)/documents/people/$(request.resource.data.personId)).data.active == true
+        ));
+    }
+    match /people/{personId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && validPerson(request.resource.data)
+        && request.resource.data.createdBy == request.auth.uid && request.resource.data.linkedUid == null
+        && request.resource.data.active == true;
+      allow update: if signedIn() && validPerson(request.resource.data) && resource.data.active == true && (
+        // Editar dados cadastrais sem trocar autoria, vínculo ou disponibilidade.
+        ((resource.data.createdBy == request.auth.uid || resource.data.linkedUid == request.auth.uid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name','nickname','course','year','birthDate']))
+        || (resource.data.createdBy == request.auth.uid && resource.data.linkedUid == null
+          && request.resource.data.active == false
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['active']))
+        || (resource.data.linkedUid == null && request.resource.data.linkedUid == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['linkedUid'])
+          && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.personId == personId
+          && !existsAfter(/databases/$(database)/documents/people/$(personId)/ratings/$(request.auth.uid)))
+      );
+      match /ratings/{uid} {
+        allow create, update: if owner(uid)
+          && request.resource.data.keys().hasAll(['evaluatorUid','personId','scores','total','date'])
+          && request.resource.data.keys().hasOnly(['evaluatorUid','personId','scores','total','date'])
+          && request.resource.data.evaluatorUid == uid && request.resource.data.personId == personId
+          && getAfter(/databases/$(database)/documents/people/$(personId)).data.active == true
+          && getAfter(/databases/$(database)/documents/people/$(personId)).data.linkedUid != uid
+          && validScores(request.resource.data.scores)
+          && request.resource.data.total is int
+          && request.resource.data.total == total(request.resource.data.scores)
+          && request.resource.data.date == request.time;
+        allow delete: if owner(uid);
+      }
+    }
+    // Leitura global autenticada é necessária para consolidar o ranking.
+    match /{path=**}/ratings/{uid} { allow read: if signedIn(); }
+  }
+}
