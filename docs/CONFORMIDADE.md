@@ -7,7 +7,7 @@ Documento de referência: **PiramidGame IFPR-Pgua — Especificação com Fireba
 | 1, 26 — aplicação multiusuário | pessoas compartilhadas e avaliações por UID | `CampusData`, `FirestoreService` |
 | 2 — Flutter, Firebase, go_router, Signals, tema, MVVM, Command, Result | dependências, core, domain, data, presentation | análise estática e testes |
 | 3.1, 6, 14.1–14.4, 19 — autenticação e sessão | e-mail/senha, Google Web/Android, cadastro, logout e restauração | testes de UI/usecases e Auth Emulator; OAuth real pendente |
-| 3.2, 15, 21 — Firestore | users, people, people/ID/ratings/UID | regras testadas no emulador; publicação na nuvem pendente |
+| 3.2, 15, 21 — Firestore | users, people, people/ID/ratings/UID | regras testadas no emulador; regras publicadas e teste remoto aprovado |
 | 3.3, 22 — armazenamento auxiliar | LocalStorageService guarda somente o tema | sem SQLite/Hive ou persistência principal em JSON |
 | 4.1–4.6 — organização em camadas | Services → Repositories → UseCases → Facades → ViewModels → UI | UI sem acesso direto ao Firebase, repositories ou services |
 | 5, 9, 14.12, 16 — distinção conta/pessoa e autoavaliação | vínculo atômico em users.personId e people.linkedUid | bloqueio no usecase e nas regras; testes de vínculo incompleto e tentativa de desfazer vínculo |
@@ -19,7 +19,7 @@ Documento de referência: **PiramidGame IFPR-Pgua — Especificação com Fireba
 | 16 — uma avaliação ativa por usuário/pessoa | ID da avaliação = UID sob a pessoa | teste de substituição, duplicação e falsificação de autor |
 | 17–19, 24 — telas e fluxo | Splash, Login/cadastro/Google, Pessoas, Formulário, Detalhes, Avaliação, dois rankings e Sobre | rotas privadas protegidas, inclusive URL de avaliação |
 | 20 — Sobre | contexto IFPR, critérios, cálculo, rankings, Firebase e tema | tela Sobre atualizada |
-| 23 — regras gerais | cobertas pelos itens acima | validação em nuvem e dispositivo físico ainda obrigatória |
+| 23 — regras gerais | cobertas pelos itens acima | teste remoto aprovado; dispositivo físico ainda pendente |
 
 ## Decisões permitidas pela especificação
 
@@ -29,6 +29,6 @@ Documento de referência: **PiramidGame IFPR-Pgua — Especificação com Fireba
 - O ranking é calculado nas camadas de negócio a partir dos documentos Firestore. Esse modelo é adequado à atividade; bases grandes exigiriam paginação e agregação no servidor.
 - A média não é arredondada para ordenar; o arredondamento para uma casa ocorre apenas na exibição. Empate usa nome e ID.
 
-## O que falta para declarar a entrega completa
+## Validação final pendente
 
-Criar/configurar o Firebase real, habilitar ambos os provedores, cadastrar aplicativos e certificados, publicar regras, executar testes reais em Android/Web e registrar evidências. O navegador ainda bloqueia `console.firebase.google.com` por permissão salva. Os testes locais não substituem essa etapa nem comprovam OAuth Google real.
+O Firebase real foi configurado em 18/10/2026: projeto, banco em São Paulo, Android/Web, Auth e-mail/senha e Google, certificados e regras publicados. O teste remoto do backend passou. Ainda falta validar o OAuth Google interativo e executar o APK no dispositivo físico da apresentação. Veja TESTES.md para os limites das evidências.

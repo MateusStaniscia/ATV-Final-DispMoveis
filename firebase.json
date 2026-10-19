@@ -1,5 +1,7 @@
 {
   "firestore": {
+    "database": "(default)",
+    "location": "southamerica-east1",
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
@@ -17,5 +19,19 @@
       "port": 4000
     },
     "singleProjectMode": true
+  },
+  "auth": {
+    "providers": {
+      "googleSignIn": {
+        "supportEmail": "mateusstaniscia2@gmail.com",
+        "oAuthBrandDisplayName": "PiramidGame IFPR-Pgua"
+      },
+      "emailPassword": true
+    },
+    "authorizedDomains": [
+      "localhost",
+      "piramidgame-ifpr-mstaniscia.firebaseapp.com",
+      "piramidgame-ifpr-mstaniscia.web.app"
+    ]
   }
 }

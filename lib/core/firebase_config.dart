@@ -5,11 +5,25 @@ import 'package:flutter/foundation.dart';
 
 abstract final class FirebaseConfig {
   static const useEmulators = bool.fromEnvironment('USE_FIREBASE_EMULATORS');
-  static const projectId = String.fromEnvironment('FIREBASE_PROJECT_ID');
-  static const apiKey = String.fromEnvironment('FIREBASE_API_KEY');
-  static const appId = String.fromEnvironment('FIREBASE_APP_ID');
+  static const projectId = String.fromEnvironment(
+    'FIREBASE_PROJECT_ID',
+    defaultValue: 'piramidgame-ifpr-mstaniscia',
+  );
+  static const apiKey = String.fromEnvironment(
+    'FIREBASE_API_KEY',
+    defaultValue: kIsWeb
+        ? 'AIzaSyAgKb3pEUENi-lQTvf00meLerXqXePJ6hU'
+        : 'AIzaSyDMtX5k_DF5DqnE-68k5kdqhvZDi6glcyc',
+  );
+  static const appId = String.fromEnvironment(
+    'FIREBASE_APP_ID',
+    defaultValue: kIsWeb
+        ? '1:280712703203:web:ce64818e39009c595569d6'
+        : '1:280712703203:android:2227b8605bd8bcf65569d6',
+  );
   static const senderId = String.fromEnvironment(
     'FIREBASE_MESSAGING_SENDER_ID',
+    defaultValue: '280712703203',
   );
 
   static Future<void> initialize() async {

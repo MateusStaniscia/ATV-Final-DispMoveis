@@ -2,7 +2,24 @@
 
 Aplicativo Flutter de Dispositivos Móveis, atualizado conforme a especificação de 25 páginas enviada em 18/10/2026. Pessoas são compartilhadas entre contas; avaliações pertencem ao avaliador. Cada pessoa tem ranking global por média e cada usuário tem seu ranking pessoal.
 
-**Situação:** implementação atualizada, 40 testes Flutter e 35 testes Firebase aprovados, com compilações Android e Web concluídas. A criação do Firebase real, a configuração OAuth Google e a demonstração na nuvem continuam pendentes de acesso ao console. Não confunda o modo emulador com o banco remoto exigido para a entrega. Consulte [CONFORMIDADE](docs/CONFORMIDADE.md) e [TESTES](docs/TESTES.md).
+**Situação:** Firebase real `piramidgame-ifpr-mstaniscia` configurado em 18/10/2026, Firestore Standard em São Paulo e provedores e-mail/senha e Google habilitados. Testes reais de cadastro, login, dados compartilhados, ranking e regras aprovados. Login Google interativo e execução no celular físico ainda precisam de validação. Consulte [CONFORMIDADE](docs/CONFORMIDADE.md) e [TESTES](docs/TESTES.md).
+
+## Executar com o Firebase configurado
+
+```sh
+flutter pub get
+flutter run
+```
+
+Android e Web já usam a configuração pública do projeto por padrão. Não é necessário preencher chaves. As variáveis `--dart-define` continuam disponíveis para outro projeto. O certificado Android debug desta máquina foi cadastrado; ao compilar em outra máquina, cadastre também o SHA-1/SHA-256 correspondente para o Google Sign-In. A assinatura debug serve à atividade, não à publicação na Play Store.
+
+Teste remoto explícito (cria duas contas temporárias, remove contas/avaliações ao terminar e arquiva uma pessoa fictícia):
+
+```powershell
+$env:RUN_CLOUD_TEST='piramidgame-ifpr-mstaniscia'
+node tests/cloud-smoke.cjs
+```
+
 
 ## Funcionalidades
 
@@ -65,7 +82,7 @@ flutter build web --debug --dart-define=USE_FIREBASE_EMULATORS=true
 flutter build apk --debug --dart-define=USE_FIREBASE_EMULATORS=true
 ```
 
-## Firebase real — configuração necessária
+## Configurar outro projeto Firebase (opcional)
 
 1. Criar o projeto e o Firestore `(default)`, edição Standard, com acesso restrito.
 2. Ativar Authentication por **E-mail/senha** e **Google**, definindo o e-mail de suporte solicitado pelo console.
@@ -86,14 +103,14 @@ O Android inicializa Firebase explicitamente; o Google Sign-In recebe `serverCli
 6. Publicar regras e índices com a conta autorizada:
 
 ```sh
-npx firebase login
-npx firebase deploy --only firestore:rules,firestore:indexes --project SEU_PROJECT_ID
+npx -y firebase-tools@latest login
+npx -y firebase-tools@latest deploy --only firestore:rules,firestore:indexes --project SEU_PROJECT_ID
 flutter run -d chrome --dart-define-from-file=config/firebase.web.local.json
 flutter build apk --release --dart-define-from-file=config/firebase.android.local.json
 ```
 
 7. Conferir domínios autorizados em Authentication, incluindo o domínio Web utilizado. Validar login Google, persistência após reiniciar, duas contas e outro dispositivo antes da entrega.
 
-O projeto usa assinatura debug também no build release para instalação didática. Uma publicação na loja exige assinatura própria. Sem configuração real, o app exibe instruções de configuração. As operações de dados exigem conexão com o servidor; não anunciam gravações offline como sucesso.
+O projeto usa assinatura debug também no build release para instalação didática. Uma publicação na loja exige assinatura própria. O projeto desta atividade já está configurado por padrão. As operações de dados exigem conexão com o servidor; não anunciam gravações offline como sucesso.
 
 Datas informadas: 13/10 ou 20/10/2026; a data definitiva depende da confirmação do professor.

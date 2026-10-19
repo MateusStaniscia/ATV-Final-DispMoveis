@@ -9,10 +9,10 @@ Revisão baseada na especificação Firebase/Firestore de 25 páginas. O relató
 | Análise estática Dart/Flutter | Sem problemas |
 | Testes Flutter | 40 aprovados |
 | Firebase Emulator Suite | 35 aprovados, nenhuma falha |
-| Compilação Android debug | APK gerado em modo emulador |
-| Compilação Web debug | Concluída em modo emulador |
-| OAuth Google real | Pendente de configuração e acesso ao projeto |
-| Firebase remoto real | Pendente; nenhum projeto real configurado nesta sessão |
+| Compilação Android debug | APK gerado com configuração do Firebase real |
+| Compilação Web debug | Concluída com configuração do Firebase real |
+| OAuth Google real | Provedor e certificados configurados; interação real ainda não validada |
+| Firebase remoto real | Teste remoto aprovado em piramidgame-ifpr-mstaniscia |
 | Execução em dispositivo físico | Não realizada |
 
 Ambiente: Windows, Flutter 3.38.9, Dart 3.10.8, Java 22, Node 24, Firebase CLI 15.34.0. Android SDK 36, mínimo 24, AGP 8.11.1, Kotlin 2.4.21. O workflow usa Java 21 e Node 22 e também compila Android para detectar incompatibilidades nativas.
@@ -79,3 +79,11 @@ flutter build apk --debug --dart-define=USE_FIREBASE_EMULATORS=true
 - [ ] Confirmar data definitiva com o professor (13/10 ou 20/10/2026).
 
 Testes de regra, testes de widget e compilação não substituem a demonstração de banco remoto nem comprovam consentimento OAuth Google real. O teste anterior Flutter/Chrome que não conectou ao executor não foi contado como aprovado.
+
+## Validação remota — 18/10/2026
+
+Projeto `piramidgame-ifpr-mstaniscia` (280712703203), Firestore Standard, banco `(default)`, região `southamerica-east1`, cota gratuita. Regras e Auth publicados pelo plugin oficial Firebase. Android e Web registrados; certificados SHA-1/SHA-256 debug e clientes OAuth cadastrados.
+
+`tests/cloud-smoke.cjs` passou com dados sintéticos: acesso anônimo negado, duas contas criadas, senha inválida rejeitada, login correto, pessoa compartilhada entre sessões, edição por terceiro bloqueada, avaliações 45/75 resultando em média 60, alteração de avaliação alheia e total falso negados, logout impedindo acesso remoto. As contas e avaliações temporárias da execução concluída foram removidas; a pessoa fictícia foi arquivada. A execução inicial foi interrompida por erro no identificador de banco do script, corrigido antes da execução aprovada; pode ter deixado contas sintéticas `smoke-...@example.com` sem dados no banco.
+
+40 testes Flutter novamente aprovados após incluir a configuração real. Análise Dart sem problemas. Não alegamos validação de OAuth interativo Google nem execução física: estas etapas dependem da interação com a conta/dispositivo.

@@ -2,7 +2,7 @@
 
 A implementação foi enviada ao GitHub em 18/10/2026, na branch [feat/firebase-auth-firestore](https://github.com/MateusStaniscia/ATV-Final-DispMoveis/tree/feat/firebase-auth-firestore). A branch `main` permanece sem alteração. A abertura automática de pull request retornou HTTP 403 pela integração; o envio da branch pelo Git foi concluído.
 
-O PDF foi recebido novamente e lido integralmente em 18/10/2026. A adaptação está descrita em CONFORMIDADE.md. A integração e validação com um projeto Firebase real ainda dependem de acesso ao console.
+O PDF foi recebido novamente e lido integralmente em 18/10/2026. A adaptação está descrita em CONFORMIDADE.md. O Firebase real está configurado e o teste remoto passou em 18/10/2026.
 
 ## Cópia alternativa: pacote Git
 
@@ -21,12 +21,8 @@ Depois, abra um pull request da branch feat/firebase-auth-firestore para main no
 
 Extraia ATV-Final-DispMoveis-Firebase.zip para abrir e executar o projeto. O ZIP contém o código completo e a documentação, sem caches, dependências baixadas ou credenciais.
 
-## Pendências da atividade
+## Estado da publicação
 
-- Criar o projeto Firebase, ativar Authentication por e-mail/senha e criar Firestore.
-- Preencher a configuração local da plataforma conforme README.md.
-- Publicar as regras de segurança e testar o aplicativo com dados fictícios no Firebase real.
-- Validar no Android usado na apresentação.
-- Confirmar a data definitiva com o professor: possibilidades informadas de 13/10 ou 20/10/2026.
+Firebase `piramidgame-ifpr-mstaniscia` configurado. Android/Web, Firestore Standard em São Paulo, Auth e-mail/senha e Google e regras publicados. O app usa a configuração real por padrão. Teste remoto concluído; detalhes em TESTES.md.
 
-Não há comprovação de funcionamento na nuvem antes desses passos. Foram aprovados testes Flutter e testes nos emuladores oficiais, conforme TESTES.md, além da análise estática e compilação Web.
+Pendências: login Google interativo, execução no Android da apresentação e confirmação da data definitiva pelo professor (13/10 ou 20/10/2026).

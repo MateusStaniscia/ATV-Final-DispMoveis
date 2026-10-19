@@ -13,7 +13,11 @@ class AuthService {
         GoogleAuthProvider()..setCustomParameters({'prompt': 'select_account'}),
       );
     } else {
-      const clientId = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
+      const clientId = String.fromEnvironment(
+        'GOOGLE_WEB_CLIENT_ID',
+        defaultValue:
+            '280712703203-ilu3u2lfitc5ulqdng0h2eljh81mp4v0.apps.googleusercontent.com',
+      );
       _googleInitialization ??= GoogleSignIn.instance.initialize(
         serverClientId: clientId.isEmpty ? null : clientId,
       );
