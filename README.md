@@ -2,7 +2,7 @@
 
 Aplicativo Flutter de Dispositivos Móveis, atualizado conforme a especificação de 25 páginas enviada em 18/10/2026. Pessoas são compartilhadas entre contas; avaliações pertencem ao avaliador. Cada pessoa tem ranking global por média e cada usuário tem seu ranking pessoal.
 
-**Situação:** Firebase real `piramidgame-ifpr-mstaniscia` configurado em 18/10/2026, Firestore Standard em São Paulo e provedores e-mail/senha e Google habilitados. Testes reais de cadastro, login, dados compartilhados, ranking e regras aprovados. Login Google interativo e execução no celular físico ainda precisam de validação. Consulte [CONFORMIDADE](docs/CONFORMIDADE.md) e [TESTES](docs/TESTES.md).
+**Situação:** Firebase real `piramidgame-ifpr-mstaniscia` configurado em 18/10/2026, Firestore Standard em São Paulo e provedores e-mail/senha e Google habilitados. Testes reais de cadastro, login, dados compartilhados, ranking e regras aprovados. Inicialização e login Google validados no Galaxy S23 em 19/10/2026; demais fluxos físicos continuam no roteiro de testes. Consulte [CONFORMIDADE](docs/CONFORMIDADE.md) e [TESTES](docs/TESTES.md).
 
 ## Executar com o Firebase configurado
 

@@ -11,7 +11,7 @@ Revisão baseada na especificação Firebase/Firestore de 25 páginas. O relató
 | Firebase Emulator Suite | 35 aprovados, nenhuma falha |
 | Compilação Android debug | APK gerado com configuração do Firebase real |
 | Compilação Web debug | Concluída com configuração do Firebase real |
-| OAuth Google real | Provedor e certificados configurados; interação real ainda não validada |
+| OAuth Google real | Validado pelo usuário no Galaxy S23 em 19/10/2026: Google abriu a tela principal |
 | Firebase remoto real | Teste remoto aprovado em piramidgame-ifpr-mstaniscia |
 | Execução em dispositivo físico | Inicialização até login validada no Galaxy S23 por USB em 19/10/2026; demais fluxos em validação |
 
@@ -93,3 +93,5 @@ Projeto `piramidgame-ifpr-mstaniscia` (280712703203), Firestore Standard, banco 
 A primeira instalação física revelou `ClassNotFoundException: io.flutter.plugins.GeneratedPluginRegistrant`, causando `channel-error` ao inicializar o Firebase. O APK anterior compilava, mas não incluía o registrador nativo porque uma falha de symlinks no `flutter pub get` havia sido contornada com `--no-pub`.
 
 Corrigido regenerando os arquivos pelo Flutter com `FLUTTER_WINDOWS=false` apenas no processo de build Android. Nenhuma configuração de segurança do Windows/celular foi desativada. O Gradle agora falha explicitamente caso o registrador não exista. O APK ARM64 foi instalado via `adb install -r` no S23; a tela de login abriu e o log do novo processo não apresentou erros de registro/Firebase. Essa evidência comprova a inicialização física, não todos os fluxos nem OAuth Google.
+
+Confirmação do usuário em 19/10/2026: após instalar o APK corrigido no Galaxy S23, o login Google abriu a tela principal. Os demais fluxos físicos (persistência após reiniciar, logout, cadastro e avaliações) continuam no roteiro de validação.
