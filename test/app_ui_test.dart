@@ -112,6 +112,28 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('detalhes sem histórico voltam ao início pela seta', (
+    tester,
+  ) async {
+    await open(tester, '/detail/other');
+    expect(router.canPop(), isFalse);
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(find.byType(HomeScreen), findsOneWidget);
+  });
+
+  testWidgets('detalhes preservam a tela anterior ao voltar', (tester) async {
+    await open(tester, '/home');
+    await tester.tap(find.text('Ranking Global'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Outra pessoa'));
+    await tester.pumpAndSettle();
+    expect(router.canPop(), isTrue);
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(find.text('60.0 pts'), findsOneWidget);
+  });
+
   testWidgets('abas distinguem ranking pessoal e média global em tela móvel', (
     tester,
   ) async {

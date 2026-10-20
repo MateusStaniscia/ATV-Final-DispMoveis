@@ -48,7 +48,18 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
     final busy =
         vm.linkPersonCommand.isExecuting || vm.removePersonCommand.isExecuting;
     return Scaffold(
-      appBar: AppBar(title: const Text('Detalhes da pessoa')),
+      appBar: AppBar(
+        title: const Text('Detalhes da pessoa'),
+        leading: BackButton(
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/home');
+            }
+          },
+        ),
+      ),
       body: vm.loadCommand.isExecuting
           ? const Center(child: CircularProgressIndicator())
           : p == null

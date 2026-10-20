@@ -95,3 +95,7 @@ A primeira instalação física revelou `ClassNotFoundException: io.flutter.plug
 Corrigido regenerando os arquivos pelo Flutter com `FLUTTER_WINDOWS=false` apenas no processo de build Android. Nenhuma configuração de segurança do Windows/celular foi desativada. O Gradle agora falha explicitamente caso o registrador não exista. O APK ARM64 foi instalado via `adb install -r` no S23; a tela de login abriu e o log do novo processo não apresentou erros de registro/Firebase. Essa evidência comprova a inicialização física, não todos os fluxos nem OAuth Google.
 
 Confirmação do usuário em 19/10/2026: após instalar o APK corrigido no Galaxy S23, o login Google abriu a tela principal. Os demais fluxos físicos (persistência após reiniciar, logout, cadastro e avaliações) continuam no roteiro de validação.
+
+## Navegação nos detalhes — 19/10/2026
+
+Seta de voltar sempre disponível. Quando há histórico, retorna à tela anterior preservando a aba selecionada; sem histórico (por exemplo, após salvar avaliação), abre /home. Os seis testes de UI passaram, incluindo dois novos testes de regressão para esses fluxos.
