@@ -114,3 +114,15 @@ flutter build apk --release --dart-define-from-file=config/firebase.android.loca
 O projeto usa assinatura debug também no build release para instalação didática. Uma publicação na loja exige assinatura própria. O projeto desta atividade já está configurado por padrão. As operações de dados exigem conexão com o servidor; não anunciam gravações offline como sucesso.
 
 Datas informadas: 13/10 ou 20/10/2026; a data definitiva depende da confirmação do professor.
+
+## Build Android no Windows
+
+Se o Windows não permitir links simbólicos e você só for compilar Android/Web, use a variável abaixo apenas no terminal de build. Não ignore falhas do `pub get` e não use `--no-pub` para contorná-las: isso pode deixar o APK sem o registro dos plugins nativos.
+
+```powershell
+$env:FLUTTER_WINDOWS='false'
+flutter pub get
+flutter build apk --debug --target-platform android-arm64
+```
+
+O build verifica a existência do registrador gerado antes de compilar. O APK ARM64 atende ao Galaxy S23; para outras arquiteturas, omita `--target-platform`.

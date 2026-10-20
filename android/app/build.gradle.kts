@@ -46,3 +46,14 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+// Flutter registers native plugins through this generated class. Without it,
+// Gradle can still build an APK that fails with channel-error at startup.
+tasks.named("preBuild") {
+    doFirst {
+        check(file("src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java").isFile) {
+            "Native plugin registration is missing. Run flutter pub get successfully before building. " +
+                "On Windows for Android/Web only, set FLUTTER_WINDOWS=false for that command."
+        }
+    }
+}

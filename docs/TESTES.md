@@ -13,7 +13,7 @@ Revisão baseada na especificação Firebase/Firestore de 25 páginas. O relató
 | Compilação Web debug | Concluída com configuração do Firebase real |
 | OAuth Google real | Provedor e certificados configurados; interação real ainda não validada |
 | Firebase remoto real | Teste remoto aprovado em piramidgame-ifpr-mstaniscia |
-| Execução em dispositivo físico | Não realizada |
+| Execução em dispositivo físico | Inicialização até login validada no Galaxy S23 por USB em 19/10/2026; demais fluxos em validação |
 
 Ambiente: Windows, Flutter 3.38.9, Dart 3.10.8, Java 22, Node 24, Firebase CLI 15.34.0. Android SDK 36, mínimo 24, AGP 8.11.1, Kotlin 2.4.21. O workflow usa Java 21 e Node 22 e também compila Android para detectar incompatibilidades nativas.
 
@@ -87,3 +87,9 @@ Projeto `piramidgame-ifpr-mstaniscia` (280712703203), Firestore Standard, banco 
 `tests/cloud-smoke.cjs` passou com dados sintéticos: acesso anônimo negado, duas contas criadas, senha inválida rejeitada, login correto, pessoa compartilhada entre sessões, edição por terceiro bloqueada, avaliações 45/75 resultando em média 60, alteração de avaliação alheia e total falso negados, logout impedindo acesso remoto. As contas e avaliações temporárias da execução concluída foram removidas; a pessoa fictícia foi arquivada. A execução inicial foi interrompida por erro no identificador de banco do script, corrigido antes da execução aprovada; pode ter deixado contas sintéticas `smoke-...@example.com` sem dados no banco.
 
 40 testes Flutter novamente aprovados após incluir a configuração real. Análise Dart sem problemas. Não alegamos validação de OAuth interativo Google nem execução física: estas etapas dependem da interação com a conta/dispositivo.
+
+## Correção no Galaxy S23 — 19/10/2026
+
+A primeira instalação física revelou `ClassNotFoundException: io.flutter.plugins.GeneratedPluginRegistrant`, causando `channel-error` ao inicializar o Firebase. O APK anterior compilava, mas não incluía o registrador nativo porque uma falha de symlinks no `flutter pub get` havia sido contornada com `--no-pub`.
+
+Corrigido regenerando os arquivos pelo Flutter com `FLUTTER_WINDOWS=false` apenas no processo de build Android. Nenhuma configuração de segurança do Windows/celular foi desativada. O Gradle agora falha explicitamente caso o registrador não exista. O APK ARM64 foi instalado via `adb install -r` no S23; a tela de login abriu e o log do novo processo não apresentou erros de registro/Firebase. Essa evidência comprova a inicialização física, não todos os fluxos nem OAuth Google.
