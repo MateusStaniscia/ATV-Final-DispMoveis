@@ -1,6 +1,6 @@
 # Publicar a atualização
 
-A implementação foi enviada ao GitHub em 18/10/2026, na branch [feat/firebase-auth-firestore](https://github.com/MateusStaniscia/ATV-Final-DispMoveis/tree/feat/firebase-auth-firestore). A branch `main` permanece sem alteração. A abertura automática de pull request retornou HTTP 403 pela integração; o envio da branch pelo Git foi concluído.
+A implementação foi enviada ao GitHub em 18/10/2026, na branch [feat/firebase-auth-firestore](https://github.com/MateusStaniscia/ATV-Final-DispMoveis/tree/feat/firebase-auth-firestore). Em 19/10/2026, todas as alterações foram incorporadas à branch `main` por fast-forward e enviadas ao GitHub. A abertura automática de pull request retornou HTTP 403 pela integração; o envio da branch pelo Git foi concluído.
 
 O PDF foi recebido novamente e lido integralmente em 18/10/2026. A adaptação está descrita em CONFORMIDADE.md. O Firebase real está configurado e o teste remoto passou em 18/10/2026.
 
@@ -15,7 +15,7 @@ git remote set-url origin https://github.com/MateusStaniscia/ATV-Final-DispMovei
 git push -u origin feat/firebase-auth-firestore
 ```
 
-Depois, abra um pull request da branch feat/firebase-auth-firestore para main no GitHub. O README e docs/TESTES.md explicam o que foi alterado e testado.
+O merge da implementação para `main` já foi concluído em 19/10/2026. O README e docs/TESTES.md explicam o que foi alterado e testado.
 
 ## Opção 2: ZIP
 
